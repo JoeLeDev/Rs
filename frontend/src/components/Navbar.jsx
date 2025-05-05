@@ -18,9 +18,7 @@ const Navbar = () => {
       {isAuthenticated ? (
         <>
           <Link to="/dashboard" style={{ marginRight: "1rem" }}>Dashboard</Link>
-          <Link to="/profile" style={{ marginRight: "1rem" }}>
-            {user?.username || "Profil"}
-          </Link>
+          <Link to="/profile" style={{ marginRight: "1rem" }}>Profil</Link>
           <button onClick={handleLogout} style={{ marginLeft: "1rem" }}>
             Déconnexion
           </button>
