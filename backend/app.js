@@ -9,6 +9,8 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
+
 
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
