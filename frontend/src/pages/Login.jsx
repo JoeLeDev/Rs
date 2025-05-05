@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
+import { AuthContext } from "../contexts/AuthContext";
+import API from "./Api";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,8 +21,8 @@ const Login = () => {
       // Stocker le token localement
       localStorage.setItem("token", token);
       console.log("Connecté en tant que :", user);
-
-       navigate('/dashboard');
+      login(user, token); // Appel de la fonction login du contexte
+       navigate('/');
 
     } catch (err) {
       console.error(err);

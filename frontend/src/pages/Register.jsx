@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
+import { AuthContext } from "../contexts/AuthContext";
+import API from "./Api";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Register = () => {
   const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +26,7 @@ const Register = () => {
       localStorage.setItem("token", token);
       console.log("Inscription réussie :", user);
 
+      login
       // Redirection possible :
        navigate('/dashboard');
 
