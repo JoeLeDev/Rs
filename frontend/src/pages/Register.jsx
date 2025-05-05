@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import API from "./Api";
+import toast from "react-hot-toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -26,13 +27,14 @@ const Register = () => {
       localStorage.setItem("token", token);
       console.log("Inscription réussie :", user);
 
-      login
+      login(res.data.user, res.data.token);
+      toast.success("Compte créé avec succès !");
       // Redirection possible :
        navigate('/dashboard');
 
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Erreur lors de l'inscription");
+      toast.error(err.response?.data?.message || "Erreur lors de l'inscription");
     }
   };
 

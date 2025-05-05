@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../contexts/AuthContext";
 import API from "./Api";
+import toast from "react-hot-toast";
 
 const Profile = () => {
   const { user, token, login } = useContext(AuthContext);
@@ -23,11 +24,13 @@ const Profile = () => {
         password,
       });
       login(res.data.user, token); // maj contexte
-      setMessage("✅ Profil mis à jour");
+      toast.success("✅ Profil mis à jour !");
       setPassword("");
     } catch (err) {
       console.error(err);
-      setMessage("❌ Erreur lors de la mise à jour");
+      toast.error(
+        err.response?.data?.message || "Erreur lors de la mise à jour"
+      );
     }
   };
 
@@ -64,19 +67,20 @@ const Profile = () => {
         </li>
       </ul>
       {user?.imageUrl && (
-        <div style={{ margin: "1rem 0" }}>
-          <img
-            src={`http://localhost:5001/${user.imageUrl}`}
-            alt="Photo de profil"
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
-        </div>
-      )}
+  <div style={{ margin: "1rem 0" }}>
+    <img
+      src={`http://localhost:5001/${user.imageUrl}`}
+      alt="Photo de profil"
+      style={{
+        width: "120px",
+        height: "120px",
+        borderRadius: "50%",
+        objectFit: "cover",
+        border: "2px solid #ccc"
+      }}
+    />
+  </div>
+)}
 
       <h3 style={{ marginTop: "2rem" }}>Modifier mes infos</h3>
       <form onSubmit={handleUpdate}>

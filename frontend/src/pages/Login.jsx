@@ -23,12 +23,13 @@ const Login = () => {
       localStorage.setItem("token", token);
       console.log("Connecté en tant que :", user);
       login(user, token); // Appel de la fonction login du contexte
+        toast.success("Connexion réussie !");
        navigate('/');
 
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || "Erreur lors de la connexion");
-    }
+        console.error(err);
+        toast.error(err.response?.data?.message || "Erreur lors de la connexion");
+      }
   };
 
   return (
