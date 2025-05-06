@@ -1,36 +1,46 @@
 import { createContext, useState, useEffect } from "react";
-
+import API from "../pages/Api"; // adapte le chemin si besoin
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
-
-  useEffect(() => {
-    if (token && !user) {
-
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      if (storedUser) setUser(storedUser);
-    }
-  }, [token]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const login = (userData, token) => {
-    setUser(userData);
-    setToken(token);
     localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await API.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(res.data);
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("❌ Erreur récupération user :", err);
+        logout();
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

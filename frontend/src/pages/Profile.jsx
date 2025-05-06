@@ -65,6 +65,17 @@ const Profile = () => {
         <li>
           <strong>Email actuel :</strong> {user.email}
         </li>
+        <li>
+          <strong>Rôle :</strong> {user.role}
+        </li>
+        <li>
+          <strong>Créé le :</strong>{" "} 
+          {new Date(user.createdAt).toLocaleDateString("fr-FR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })}
+        </li>
       </ul>
       {user?.imageUrl && (
   <div style={{ margin: "1rem 0" }}>
