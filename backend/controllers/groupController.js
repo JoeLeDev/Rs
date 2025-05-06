@@ -46,13 +46,20 @@ exports.updateGroup = async (req, res) => {
   const { name, description } = req.body;
 
   try {
-    const group = await Group.findById(groupId);
+    const group = await Group.findOne({ groupId: req.params.id });
+    if (!group) {
+      return res.status(404).json({ message: "Groupe non trouvé." });
+    }
+    const isOwner = group.createdBy.toString() === userId;
+    if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
+      return res.status(403).json({ message: "Non autorisé à modifier ce groupe." });
+    }
 
     if (!group) {
       return res.status(404).json({ message: "Groupe non trouvé." });
     }
 
-    const isOwner = group.createdBy.toString() === userId;
+     isOwner = group.createdBy.toString() === userId;
 
     if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
       return res.status(403).json({ message: "Non autorisé à modifier ce groupe." });
@@ -67,5 +74,33 @@ exports.updateGroup = async (req, res) => {
   } catch (err) {
     console.error("Erreur updateGroup :", err);
     res.status(500).json({ message: "Erreur serveur lors de la modification." });
+  }
+};
+
+
+exports.deleteGroup = async (req, res) => {
+  const groupId = req.params.id;
+  const userId = req.user.id;
+  const userRole = req.user.role;
+
+  try {
+    const group = await Group.findOne({ groupId: groupId });
+
+    if (!group) {
+      return res.status(404).json({ message: "Groupe non trouvé." });
+    }
+
+    const isOwner = group.createdBy.toString() === userId;
+
+    if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
+      return res.status(403).json({ message: "Non autorisé à supprimer ce groupe." });
+    }
+
+    await group.deleteOne();
+
+    res.status(200).json({ message: "Groupe supprimé avec succès." });
+  } catch (err) {
+    console.error("Erreur deleteGroup :", err);
+    res.status(500).json({ message: "Erreur lors de la suppression." });
   }
 };

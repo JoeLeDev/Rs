@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const groupSchema = new mongoose.Schema({
   name: {
@@ -16,5 +17,7 @@ const groupSchema = new mongoose.Schema({
     ref: "User"
   }]
 }, { timestamps: true });
+
+groupSchema.plugin(AutoIncrement, { inc_field: 'groupId' });
 
 module.exports = mongoose.model("Group", groupSchema);
