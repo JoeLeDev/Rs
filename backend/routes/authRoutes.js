@@ -6,6 +6,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const upload = require("../middlewares/uploadMiddleware");
 const User = require("../models/User");
 const multer = require("multer");
+const { getAllGroups } = require("../controllers/groupController");
 
 router.post('/register', register);
 router.post('/login', login);
@@ -13,6 +14,7 @@ router.post('/login', login);
 router.patch("/update", authMiddleware, updateUser);
 
 
+router.get("/", getAllGroups);
 router.get('/me', authMiddleware, (req, res) => {
   res.status(200).json({ message: "Welcome", user: req.user });
 });
