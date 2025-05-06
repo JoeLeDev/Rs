@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-const groupRoutes = require("./routes/groupRoutes");
 dotenv.config();
 const app = express();
 
@@ -10,6 +9,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
+
+
+const groupRoutes = require("./routes/groupRoutes");
 app.use("/api/groups", groupRoutes);
 
 const authRoutes = require('./routes/authRoutes');

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { useContext } from "react";
+
 import API from "./Api";
 
 const Login = () => {
@@ -21,6 +22,7 @@ const Login = () => {
 
       // Stocker le token localement
       localStorage.setItem("token", token);
+      console.log("Token stocké :", token);
       console.log("Connecté en tant que :", user);
       login(user, token); // Appel de la fonction login du contexte
         toast.success("Connexion réussie !");
