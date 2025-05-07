@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { useContext } from "react";
+import { Link } from "react-router-dom";
 
 import API from "./Api";
 
@@ -62,6 +63,9 @@ const Login = () => {
         <button type="submit" style={{ padding: "0.5rem 1rem" }}>
           Se connecter
         </button>
+        <p style={{ marginTop: "1rem" }}>
+          Pas encore de compte ? <Link to="/register">Inscris-toi</Link>
+        </p>
       </form>
     </div>
   );

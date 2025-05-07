@@ -15,7 +15,11 @@ const groupSchema = new mongoose.Schema({
   members: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
-  }]
+  }],
+  meetingDay: {
+    type: String,
+    required: true
+  }
 }, { timestamps: true });
 
 groupSchema.plugin(AutoIncrement, { inc_field: 'groupId' });

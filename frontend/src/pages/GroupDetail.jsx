@@ -89,7 +89,7 @@ const GroupDetail = () => {
               cursor: "pointer"
             }}
           >
-            {isMember ? "Quitter le groupe" : "Rejoindre le groupe"}
+            {isMember  ? "Quitter le groupe" : "Rejoindre le groupe"}
           </button>
 
           {message && (
