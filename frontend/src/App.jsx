@@ -8,6 +8,8 @@ import Groups from './pages/Groups';
 import Events from './pages/Events';
 import Messages from './pages/Messages';
 import Home from './pages/Home';
+import GroupDetail from './pages/GroupDetail';
+
 
 const App = () => {
   return (
@@ -22,6 +24,7 @@ const App = () => {
         <Route path='/groups' element={<Groups />} />
         <Route path='/events' element={<Events />} />
         <Route path='/messages' element={<Messages />} />
+        <Route path="/groups/:id" element={<GroupDetail />} />
         <Route path='*' element={<h1>404 Not Found</h1>} />
       </Routes>
     </Router>

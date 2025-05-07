@@ -1,5 +1,6 @@
 const Group = require("../models/Group");
 
+// Obtenir tous les groupes
 exports.getAllGroups = async (req, res) => {
   try {
     const groups = await Group.find().populate("createdBy", "username");
@@ -11,6 +12,7 @@ exports.getAllGroups = async (req, res) => {
 };
 
 
+// Créer un groupe
 exports.createGroup = async (req, res) => {
   const { name, description } = req.body;
   const userId = req.user.id;
@@ -39,6 +41,7 @@ exports.createGroup = async (req, res) => {
   }
 };
 
+// Mettre à jour un groupe
 exports.updateGroup = async (req, res) => {
   const groupId = req.params.id;
   const userId = req.user.id;
@@ -78,6 +81,7 @@ exports.updateGroup = async (req, res) => {
 };
 
 
+// Supprimer un groupe
 exports.deleteGroup = async (req, res) => {
   const groupId = req.params.id;
   const userId = req.user.id;
@@ -102,5 +106,60 @@ exports.deleteGroup = async (req, res) => {
   } catch (err) {
     console.error("Erreur deleteGroup :", err);
     res.status(500).json({ message: "Erreur lors de la suppression." });
+  }
+};
+
+// Obtenir un groupe par ID
+exports.getGroupById = async (req, res) => {
+  try {
+    const group = await Group.findOne({ groupId: req.params.id }).populate("members", "username email");
+
+    if (!group) return res.status(404).json({ message: "Groupe introuvable." });
+
+    res.status(200).json(group);
+  } catch (err) {
+    console.error("Erreur getGroupById :", err);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+};
+
+
+// Rejoindre un groupe
+exports.joinGroup = async (req, res) => {
+  try {
+    const group = await Group.findOne({ groupId: req.params.id });
+
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    const userId = req.user.id;
+    if (group.members.includes(userId)) {
+      return res.status(400).json({ message: "Déjà membre du groupe" });
+    }
+
+    group.members.push(userId);
+    await group.save();
+
+    res.status(200).json({ message: "Rejoint avec succès" });
+  } catch (err) {
+    console.error("Erreur joinGroup :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// Quitter un groupe
+exports.leaveGroup = async (req, res) => {
+  try {
+    const group = await Group.findOne({ groupId: req.params.id });
+
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    const userId = req.user.id;
+    group.members = group.members.filter((id) => id.toString() !== userId);
+    await group.save();
+
+    res.status(200).json({ message: "Quitté avec succès" });
+  } catch (err) {
+    console.error("Erreur leaveGroup :", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };

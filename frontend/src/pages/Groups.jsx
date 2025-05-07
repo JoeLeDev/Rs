@@ -1,7 +1,10 @@
 import { useState, useEffect, useContext } from "react";
 import API from "./Api";
 import { AuthContext } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 
+
+// Composant pour afficher la liste des groupes
 const Groups = () => {
   const [groups, setGroups] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -57,22 +60,27 @@ const Groups = () => {
             gap: "1.5rem",
           }}
         >
-          {groups.map((group) => (
-            <div
-              key={group.groupId}
-              style={{
-                padding: "1.5rem",
-                border: "1px solid #ddd",
-                borderRadius: "var(--radius)",
-                boxShadow: "var(--shadow)",
-                backgroundColor: "#fff",
-              }}
-            >
-              <h3>{group.name}</h3>
-              <p>{group.description}</p>
-              <button style={{ marginTop: "1rem" }}>Voir le groupe</button>
-            </div>
-          ))}
+{groups.map((group) => (
+  <Link
+    to={`/groups/${group.groupId}`}
+    key={group.groupId}
+    style={{ textDecoration: "none", color: "inherit" }}
+  >
+    <div style={{
+      padding: "1.5rem",
+      border: "1px solid #ddd",
+      borderRadius: "var(--radius)",
+      boxShadow: "var(--shadow)",
+      backgroundColor: "#fff",
+      transition: "0.2s",
+      cursor: "pointer"
+    }}>
+      <h3>{group.name}</h3>
+      <p>{group.description}</p>
+      <p style={{ color: "blue", marginTop: "1rem" }}>Voir le groupe →</p>
+    </div>
+  </Link>
+))}
         </div>
       )}
 
