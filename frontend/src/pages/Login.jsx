@@ -23,10 +23,10 @@ const Login = () => {
       // Stocker le token localement
       localStorage.setItem("token", token);
       console.log("Token stocké :", token);
-      console.log("Connecté en tant que :", user);
       login(user, token); // Appel de la fonction login du contexte
-        toast.success("Connexion réussie !");
-       navigate('/');
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 100);  // Redirection vers le tableau de bord
 
     } catch (err) {
         console.error(err);
