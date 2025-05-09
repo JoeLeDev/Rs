@@ -22,6 +22,13 @@ const Groups = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = ["admin", "admin_groupe"].includes(user?.role);
 
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    meetingDay: "",
+  });
+
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -52,13 +59,33 @@ const Groups = () => {
   }, [groups, filter, day, user.id]);
 
   const getDynamicTitle = () => {
-    const groupLabel = filter === "mine" ? "Mes groupes" :
-                       filter === "available" ? "Groupes disponibles" :
-                       "Tous les groupes";
-  
+    const groupLabel =
+      filter === "mine"
+        ? "Mes groupes"
+        : filter === "available"
+        ? "Groupes disponibles"
+        : "Tous les groupes";
+
     const dayLabel = day !== "Tous" ? ` du ${day}` : "";
-  
+
     return groupLabel + dayLabel;
+  };
+
+  const handleCreateGroup = async (groupData) => {
+    try {
+      const res = await API.post("/groups", groupData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setGroups((prev) => [...prev, res.data]);
+      setShowModal(false);
+      setForm({ name: "", description: "", meetingDay: "" });
+    } catch (err) {
+      console.error("Erreur création groupe", err);
+    }
+  };
+
+  const handleModalSubmit = () => {
+    handleCreateGroup(form);
   };
 
   return (
@@ -72,7 +99,6 @@ const Groups = () => {
         style={{
           width: "100%",
           maxWidth: "fit-content",
-          minHeight: "50px",
           padding: "1rem",
           border: "1px solid #ddd",
           borderRadius: "var(--radius)",
@@ -81,20 +107,25 @@ const Groups = () => {
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-between",
-          transition: "0.2s",
-          cursor: "pointer",
-          textAlign: "left",
           gap: "2rem",
           marginBottom: "2rem",
         }}
       >
-        <select   style={{ width: "auto", borderRadius: "12px", }} value={filter} onChange={(e) => setFilter(e.target.value)}>
+        <select
+          style={{ width: "auto", borderRadius: "12px" }}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
           <option value="all">Tous les groupes</option>
           <option value="mine">Mes groupes</option>
           <option value="available">Groupes disponibles</option>
         </select>
 
-        <select style={{ width: "auto" , borderRadius: "12px",}} value={day} onChange={(e) => setDay(e.target.value)}>
+        <select
+          style={{ width: "auto", borderRadius: "12px" }}
+          value={day}
+          onChange={(e) => setDay(e.target.value)}
+        >
           {days.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -119,7 +150,7 @@ const Groups = () => {
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
             gap: "1.5rem",
-            justifyContent: "center"
+            justifyContent: "center",
           }}
         >
           {filteredGroups.map((group) => (
@@ -159,6 +190,79 @@ const Groups = () => {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* 🪟 Modal */}
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              padding: "2rem",
+              borderRadius: "var(--radius)",
+              width: "400px",
+              boxShadow: "var(--shadow)",
+            }}
+          >
+            <h3>Créer un groupe</h3>
+            <input
+              placeholder="Nom"
+              style={{ width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+              value={form.name}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+            <textarea
+              placeholder="Description"
+              rows={3}
+              style={{ width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+            <select
+              value={form.meetingDay}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, meetingDay: e.target.value }))
+              }
+              style={{ width: "100%", marginBottom: "1rem", padding: "0.5rem" }}
+            >
+              <option value="" disabled>
+                Jour de réunion
+              </option>
+              {days.slice(1).map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <button
+                onClick={handleModalSubmit}
+                disabled={!form.name || !form.meetingDay}
+              >
+                Créer
+              </button>
+              <button onClick={() => setShowModal(false)}>Annuler</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

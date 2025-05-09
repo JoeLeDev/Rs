@@ -11,7 +11,6 @@ exports.getAllGroups = async (req, res) => {
   }
 };
 
-
 // Créer un groupe
 exports.createGroup = async (req, res) => {
   const { name, description } = req.body;
@@ -19,7 +18,9 @@ exports.createGroup = async (req, res) => {
   const userRole = req.user.role;
 
   if (!["admin", "admin_groupe"].includes(userRole)) {
-    return res.status(403).json({ message: "Accès interdit : rôle insuffisant." });
+    return res
+      .status(403)
+      .json({ message: "Accès interdit : rôle insuffisant." });
   }
 
   if (!name) {
@@ -30,8 +31,9 @@ exports.createGroup = async (req, res) => {
     const newGroup = await Group.create({
       name,
       description,
+      meetingDay: "Lundi", // Valeur par défaut
       createdBy: userId,
-      members: [userId],
+      members: [],
     });
 
     res.status(201).json(newGroup);
@@ -46,40 +48,50 @@ exports.updateGroup = async (req, res) => {
   const groupId = req.params.id;
   const userId = req.user.id;
   const userRole = req.user.role;
-  const { name, description } = req.body;
+  const { name, description, meetingDay } = req.body;
 
   try {
-    const group = await Group.findOne({ groupId: req.params.id });
+    const groupId = Number(req.params.id);
+    console.log(
+      "🔎 req.params.id =",
+      req.params.id,
+      "type:",
+      typeof req.params.id
+    );
+    console.log("🔎 groupId (Number) =", Number(req.params.id));
+
+    const group = await Group.findOne({ groupId });
     if (!group) {
       return res.status(404).json({ message: "Groupe non trouvé." });
     }
     const isOwner = group.createdBy.toString() === userId;
     if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
-      return res.status(403).json({ message: "Non autorisé à modifier ce groupe." });
+      return res
+        .status(403)
+        .json({ message: "Non autorisé à modifier ce groupe." });
     }
-
-    if (!group) {
-      return res.status(404).json({ message: "Groupe non trouvé." });
-    }
-
-     isOwner = group.createdBy.toString() === userId;
 
     if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
-      return res.status(403).json({ message: "Non autorisé à modifier ce groupe." });
+      return res
+        .status(403)
+        .json({ message: "Non autorisé à modifier ce groupe." });
     }
 
     if (name) group.name = name;
     if (description) group.description = description;
+    if (meetingDay) group.meetingDay = meetingDay;
 
     await group.save();
 
     res.status(200).json(group);
   } catch (err) {
     console.error("Erreur updateGroup :", err);
-    res.status(500).json({ message: "Erreur serveur lors de la modification." });
+    console.error(err);
+    res
+      .status(500)
+      .json({ message: "Erreur serveur lors de la modification." });
   }
 };
-
 
 // Supprimer un groupe
 exports.deleteGroup = async (req, res) => {
@@ -97,7 +109,9 @@ exports.deleteGroup = async (req, res) => {
     const isOwner = group.createdBy.toString() === userId;
 
     if (!isOwner && !["admin", "admin_groupe"].includes(userRole)) {
-      return res.status(403).json({ message: "Non autorisé à supprimer ce groupe." });
+      return res
+        .status(403)
+        .json({ message: "Non autorisé à supprimer ce groupe." });
     }
 
     await group.deleteOne();
@@ -112,7 +126,10 @@ exports.deleteGroup = async (req, res) => {
 // Obtenir un groupe par ID
 exports.getGroupById = async (req, res) => {
   try {
-    const group = await Group.findOne({ groupId: req.params.id }).populate("members", "username email");
+    const group = await Group.findOne({ groupId: req.params.id }).populate(
+      "members",
+      "username email _id"
+    );
 
     if (!group) return res.status(404).json({ message: "Groupe introuvable." });
 
@@ -126,40 +143,44 @@ exports.getGroupById = async (req, res) => {
 
 // Rejoindre un groupe
 exports.joinGroup = async (req, res) => {
-  try {
-    const group = await Group.findOne({ groupId: req.params.id });
+  const groupId = req.params.id;
+  const userId = req.user.id;
 
-    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+  const group = await Group.findOne({ groupId });
+  if (!group) return res.status(404).json({ message: "Groupe non trouvé" });
 
-    const userId = req.user.id;
-    if (group.members.includes(userId)) {
-      return res.status(400).json({ message: "Déjà membre du groupe" });
-    }
+  const isAlreadyMember = group.members
+  .map((m) => m.toString())
+  .includes(userId.toString());
 
-    group.members.push(userId);
-    await group.save();
-
-    res.status(200).json({ message: "Rejoint avec succès" });
-  } catch (err) {
-    console.error("Erreur joinGroup :", err);
-    res.status(500).json({ message: "Erreur serveur" });
+  if (isAlreadyMember) {
+    return res.status(400).json({ message: "Tu es déjà membre du groupe." });
   }
+
+  group.members.push(userId);
+  await group.save();
+
+  res.status(200).json({ message: "Rejoint avec succès", group });
 };
 
 // Quitter un groupe
 exports.leaveGroup = async (req, res) => {
-  try {
-    const group = await Group.findOne({ groupId: req.params.id });
+  const groupId = req.params.id;
+  const userId = req.user.id;
 
-    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+  const group = await Group.findOne({ groupId });
+  if (!group) return res.status(404).json({ message: "Groupe non trouvé" });
 
-    const userId = req.user.id;
-    group.members = group.members.filter((id) => id.toString() !== userId);
-    await group.save();
+  group.members = group.members.filter(
+    (m) => m.toString() !== userId.toString()
+  );
+  const isMember = group.members.some((member) => {
+    const id = typeof member === "object" ? member._id : member;
 
-    res.status(200).json({ message: "Quitté avec succès" });
-  } catch (err) {
-    console.error("Erreur leaveGroup :", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+    return id !== userId;
+  });
+
+  await group.save();
+
+  res.status(200).json({ message: "Quitté avec succès", group });
 };
