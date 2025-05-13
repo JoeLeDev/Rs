@@ -1,59 +1,32 @@
-import { useContext } from "react";
-import { AuthContext } from "../contexts/AuthContext";
-import { Users, Calendar, Mail, User } from "lucide-react";
-import { Link } from "react-router-dom";
-
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const linkStyle = {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "1rem",
-    textDecoration: "none",
-    color: "inherit",
-    fontWeight: 500
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
-  
-  const iconStyle = {
-    marginRight: "0.5rem"
-  };
-    const cardStyle = {
-        padding: "1rem",
-        borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-        backgroundColor: "#fff",
-        marginBottom: "1rem"
-    };
-    
+
   return (
-    <div className="card">
-      <h2>Bienvenue {user?.username} 👋</h2>
-      <p>Voici ton tableau de bord.</p>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Bienvenue {user?.email || 'invité'} 👋</h1>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+          >
+            Déconnexion
+          </button>
+        </div>
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
-  <li>
-    <Link to="/groups" style={linkStyle}>
-      <Users style={iconStyle} /> Mes groupes
-    </Link>
-  </li>
-  <li>
-    <Link to="/events" style={linkStyle}>
-      <Calendar style={iconStyle} /> Mes événements
-    </Link>
-  </li>
-  <li>
-    <Link to="/messages" style={linkStyle}>
-      <Mail style={iconStyle} /> Ma messagerie
-    </Link>
-  </li>
-  <li>
-    <Link to="/profile" style={linkStyle}>
-      <User style={iconStyle} /> Mon profil
-    </Link>
-  </li>
-</ul>
+        <div className="bg-white shadow-md rounded-xl p-6">
+          <p className="text-gray-700">Ici tu verras bientôt la liste des groupes disponibles ✨</p>
+        </div>
+      </div>
     </div>
   );
 };

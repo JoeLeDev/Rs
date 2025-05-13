@@ -1,47 +1,25 @@
-import { createContext, useState, useEffect } from "react";
-import API from "../pages/Api"; // adapte le chemin si besoin
+import { createContext, useContext, useState } from 'react';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const login = (userData, token) => {
-    localStorage.setItem("token", token);
+  const login = (userData) => {
     setUser(userData);
-    setIsAuthenticated(true);
+    localStorage.setItem('token', userData.token);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
     setUser(null);
-    setIsAuthenticated(false);
+    localStorage.removeItem('token');
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      try {
-        const res = await API.get("/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(res.data);
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error("❌ Erreur récupération user :", err);
-        logout();
-      }
-    };
-
-    fetchUser();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

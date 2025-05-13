@@ -1,15 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const { getAllGroups, createGroup, updateGroup, deleteGroup, getGroupById, joinGroup, leaveGroup  } = require("../controllers/groupController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const groupController = require("../controllers/groupController");
+const auth = require("../middlewares/authMiddleware");
+const checkAbility = require("../middlewares/groupMiddleware");
+const loadGroup = require("../middlewares/loadGroup"); // 👈 nouveau
 
+// Routes
+router.get("/", auth, groupController.getAllGroups);
+router.post("/", auth, checkAbility("create", "Group"), groupController.createGroup);
+router.get("/:id", auth, groupController.getGroupById);
 
+// Pour update et delete, on charge d'abord le groupe
+router.patch("/:id", auth, loadGroup, checkAbility("update", "Group"), groupController.updateGroup);
+router.delete("/:id", auth, loadGroup, checkAbility("delete", "Group"), groupController.deleteGroup);
 
-router.get("/", getAllGroups);
-router.post("/", authMiddleware, createGroup); 
-router.patch("/:id", authMiddleware, updateGroup);
-router.delete("/:id", authMiddleware, deleteGroup);
-router.get("/:id", getGroupById);
-router.patch("/:id/join", authMiddleware, joinGroup);
-router.patch("/:id/leave", authMiddleware, leaveGroup);
 module.exports = router;

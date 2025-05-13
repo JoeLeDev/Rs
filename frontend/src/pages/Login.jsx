@@ -1,72 +1,66 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../contexts/AuthContext";
-import { useContext } from "react";
-import { Link } from "react-router-dom";
-
-import API from "./Api";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import Api from '../api/Axios';
 
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
     try {
-      const res = await API.post("/auth/login", { email, password });
-      const { token, user } = res.data;
-
-      // Stocker le token localement
-      localStorage.setItem("token", token);
-      console.log("Token stocké :", token);
-      login(user, token); // Appel de la fonction login du contexte
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 100);  // Redirection vers le tableau de bord
-
+      const res = await Api.post('/auth/login', { email, password });
+      login(res.data); // ✅ stocke le token et l'user dans le context
+      navigate('/dashboard');
     } catch (err) {
-        console.error(err);
-        toast.error(err.response?.data?.message || "Erreur lors de la connexion");
-      }
+      console.error("❌ Erreur de connexion :", err.response?.data?.message || err.message);
+      alert("Échec de la connexion");
+    }
   };
-
   return (
-    <div style={{ maxWidth: 400, margin: "auto", paddingTop: "4rem" }}>
-      <h2>Connexion</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Mot de passe</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" style={{ padding: "0.5rem 1rem" }}>
-          Se connecter
-        </button>
-        <p style={{ marginTop: "1rem" }}>
-          Pas encore de compte ? <Link to="/register">Inscris-toi</Link>
-        </p>
-      </form>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+        <div className='bg-red-500 text-white p-4'> Test Tailwind</div>
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+          Connexion
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              required
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ex: nom@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
+            <input
+              type="password"
+              required
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Se connecter
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
