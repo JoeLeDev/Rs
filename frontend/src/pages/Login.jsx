@@ -14,6 +14,7 @@ const Login = () => {
     try {
       const res = await Api.post('/auth/login', { email, password });
       login(res.data); // ✅ stocke le token et l'user dans le context
+      console.log("🧠 Réponse login :", res.data);
       navigate('/dashboard');
     } catch (err) {
       console.error("❌ Erreur de connexion :", err.response?.data?.message || err.message);
@@ -23,7 +24,6 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
-        <div className='bg-red-500 text-white p-4'> Test Tailwind</div>
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Connexion
         </h2>

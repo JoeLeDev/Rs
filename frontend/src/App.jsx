@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./components/PrivateRoute";
 import GroupList from "./pages/GroupList";
 import Acceuil from "./pages/Acceuil";
+import GroupDetail from "./pages/GroupDetail";
 
 function App() {
   return (
@@ -18,10 +19,12 @@ function App() {
           </PrivateRoute>
         }
       />
+      <Route path="/groups" element={<GroupList />} />
       <Route
-        path="/groups"
+        path="/groups/:id"
         element={
-            <GroupList />
+            <GroupDetail />
+
         }
       />
     </Routes>

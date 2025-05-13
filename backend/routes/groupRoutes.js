@@ -8,7 +8,9 @@ const loadGroup = require("../middlewares/loadGroup"); // 👈 nouveau
 // Routes
 router.get("/", auth, groupController.getAllGroups);
 router.post("/", auth, checkAbility("create", "Group"), groupController.createGroup);
-router.get("/:id", auth, groupController.getGroupById);
+router.get('/:id', auth, groupController.getGroupById);
+router.patch('/:id/join', auth, loadGroup, groupController.joinGroup);
+router.patch('/:id/leave', auth, loadGroup, groupController.leaveGroup);
 
 // Pour update et delete, on charge d'abord le groupe
 router.patch("/:id", auth, loadGroup, checkAbility("update", "Group"), groupController.updateGroup);
