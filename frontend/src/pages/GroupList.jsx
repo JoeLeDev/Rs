@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import API from "../api/axios";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -7,6 +7,8 @@ import ManageGroupModal from "../components/ManageModal";
 import { useAuth } from "../contexts/AuthContext";
 import { Search } from "lucide-react";
 import FilterDropdown from "../components/FilterDropdown";
+import GroupImage from "../assets/group.jpg";
+import Banner from "../components/Banner";
 
 const days = [
   "Lundi",
@@ -119,37 +121,46 @@ const GroupList = () => {
     }
   };
 
-const getTitle = () => {
-  const day = meetingDay;
-  const membership = membershipFilter;
+  const getTitle = () => {
+    const day = meetingDay;
+    const membership = membershipFilter;
 
-  if (membership === "joined" && day)
-    return `Mes groupes du ${day}`;
-  if (membership === "not_joined" && day)
-    return `Groupes disponibles du ${day}`;
-  if (membership === "joined")
-    return `Mes groupes`;
-  if (membership === "not_joined")
-    return `Groupes disponibles`;
-  if (day)
-    return `Groupes du ${day}`;
-  return "Tous les groupes";
-};
+    if (membership === "joined" && day) return `Mes groupes du ${day}`;
+    if (membership === "not_joined" && day)
+      return `Groupes disponibles du ${day}`;
+    if (membership === "joined") return `Mes groupes`;
+    if (membership === "not_joined") return `Groupes disponibles`;
+    if (day) return `Groupes du ${day}`;
+    return "Tous les groupes";
+  };
+  const scrollRef = useRef(null);
+
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="flex justify-between items-center mb-6 max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4 text-center">{getTitle()}</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          + Créer un groupe
-        </button>
-      </div>
 
-      <div className="flex flex-wrap justify-center items-center gap-4 mb-6 max-w-5xl mx-auto">
+  <div className="min-h-screen bg-gray-100">
+    <Banner
+      image={GroupImage}
+      title={getTitle()}
+      subtitle="Rejoignez un groupe qui vous correspond !"
+      height="h-[400px]"
+      onScrollClick={() =>
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" })
+      }
+    />
+
+    <div className="min-h-screen bg-gray-100">
+
+      <button
+        onClick={() => setShowModal(true)}
+        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        + Créer un groupe
+      </button>
+      <div 
+      ref={scrollRef}
+      className="flex flex-wrap justify-center items-center gap-4 mb-6 max-w-5xl mx-auto">
         {/* 🔍 Barre de recherche stylée avec icône */}
         <div className="relative w-full sm:w-auto">
           <input
@@ -172,7 +183,13 @@ const getTitle = () => {
 
         {/* 👥 Dropdown filtre d'appartenance */}
         <FilterDropdown
-          label={membershipFilter === "joined" ? "Mes groupes" : membershipFilter === "not_joined" ? "Groupes disponibles" : "Tous les groupes"}
+          label={
+            membershipFilter === "joined"
+              ? "Mes groupes"
+              : membershipFilter === "not_joined"
+              ? "Groupes disponibles"
+              : "Tous les groupes"
+          }
           options={["Mes groupes", "Groupes disponibles"]}
           selected={
             membershipFilter === "joined"
@@ -308,7 +325,9 @@ const getTitle = () => {
         />
       )}
     </div>
+  </div>
   );
 };
+
 
 export default GroupList;
