@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData.user);
     localStorage.setItem('user', JSON.stringify(userData.user)); // ✅ on garde l'utilisateur
     localStorage.setItem('token', userData.token);
+    console.log('role utilisateur :', userData.user.role);
   };
 
   const logout = () => {

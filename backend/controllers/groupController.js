@@ -1,7 +1,7 @@
 // controllers/groupController.js
 const Group = require("../models/Group");
 const User = require("../models/User");
-const defineAbilityFor = require("../abilities/defineAbilityFor");
+const { defineAbilityFor } = require("../abilities/defineAbilityFor");
 const mongoose = require("mongoose");
 
 // 🔁 Obtenir tous les groupes
@@ -42,61 +42,49 @@ exports.createGroup = async (req, res) => {
 };
 
 // 🛠️ Mettre à jour un groupe
+
 exports.updateGroup = async (req, res) => {
-  const groupIdParam = Number(req.params.id);
-  const { name, description, meetingDay, roleUpdates } = req.body;
-
   try {
-    const group = await Group.findOne({ groupId: groupIdParam });
-    if (!group) return res.status(404).json({ message: "Groupe non trouvé." });
+    const id = req.params.id;
+    const isMongoId = mongoose.Types.ObjectId.isValid(id);
 
-    const ability = defineAbilityFor(req.user, group);
-    if (!ability.can("update", "Group")) {
-      return res.status(403).json({ message: "Modification non autorisée." });
-    }
+    const group = isMongoId
+      ? await Group.findById(id)
+      : await Group.findOne({ groupId: Number(id) });
 
-    if (name) group.name = name;
-    if (description) group.description = description;
-    if (meetingDay) group.meetingDay = meetingDay;
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
 
-    // ✅ Gestion des rôles locaux (admin uniquement)
-    if (["admin", "admin_groupe"].includes(req.user.role) && Array.isArray(roleUpdates)) {
-      group.roles = group.roles.filter(
-        (r) => !roleUpdates.some((u) => u.userId === r.userId.toString())
-      );
-      roleUpdates.forEach(({ userId, role }) => {
-        if (role && role !== "user") {
-          group.roles.push({ userId, role });
-        }
-      });
-    }
+    group.name = req.body.name || group.name;
+    group.description = req.body.description || group.description;
 
     await group.save();
+
     res.status(200).json(group);
   } catch (err) {
-    console.error("❌ Erreur updateGroup:", err);
-    res.status(500).json({ message: "Erreur lors de la modification." });
+    console.error("Erreur updateGroup:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
+
 // 🗑️ Supprimer un groupe
 exports.deleteGroup = async (req, res) => {
-  const groupId = req.params.id;
-
   try {
-    const group = await Group.findOne({ groupId });
-    if (!group) return res.status(404).json({ message: "Groupe non trouvé." });
+    const id = req.params.id;
+    const isMongoId = mongoose.Types.ObjectId.isValid(id);
 
-    const ability = defineAbilityFor(req.user);
-    if (!ability.can("delete", "Group")) {
-      return res.status(403).json({ message: "Suppression non autorisée." });
-    }
+    const group = isMongoId
+      ? await Group.findById(id)
+      : await Group.findOne({ groupId: Number(id) });
 
-    await group.deleteOne();
-    res.status(200).json({ message: "Groupe supprimé." });
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    await Group.deleteOne({ _id: group._id }); // ✅ safe & simple
+
+    res.status(200).json({ message: "Groupe supprimé avec succès" });
   } catch (err) {
     console.error("Erreur deleteGroup:", err);
-    res.status(500).json({ message: "Erreur serveur." });
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
@@ -108,7 +96,7 @@ exports.getGroupById = async (req, res) => {
     const isMongoId = /^[a-f\d]{24}$/i.test(id); // détecte si c'est un ObjectId
 
     const group = isMongoId
-      ? await Group.findById(id).populate("members", "username").populate("createdBy", "username")
+      ? await Group.findById(id).populate("members", "username email").populate("createdBy", "username")
       : await Group.findOne({ groupId: Number(id) }).populate("members", "username").populate("createdBy", "username");
 
     if (!group) return res.status(404).json({ message: "Groupe introuvable" });
@@ -172,6 +160,37 @@ exports.leaveGroup = async (req, res) => {
     res.status(200).json({ message: "Tu as quitté le groupe" });
   } catch (err) {
     console.error("Erreur leaveGroup:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+//  Changer le rôle d'un membre
+exports.updateGroupRole = async (req, res) => {
+  const { id } = req.params;
+  const { memberId, role } = req.body;
+
+  try {
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    // ✅ Supprimer tous les anciens rôles "pilote"
+    group.roles = group.roles.filter((r) => r.role !== "pilote");
+
+    // ✅ Si un nouveau pilote est défini, on vérifie qu’il est membre et on l’ajoute
+    if (memberId) {
+      const isMember = group.members.some((m) => m.toString() === memberId);
+      if (!isMember) {
+        return res.status(400).json({ message: "Le membre n'appartient pas à ce groupe" });
+      }
+
+      group.roles.push({ userId: memberId, role: role });
+    }
+
+    await group.save();
+    res.status(200).json({ message: "Rôle mis à jour" });
+
+  } catch (err) {
+    console.error("Erreur PATCH /groups/:id/roles :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };

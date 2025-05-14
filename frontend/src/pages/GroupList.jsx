@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Settings } from "lucide-react";
+import ManageGroupModal from "../components/ManageModal";
+import { useAuth } from "../contexts/AuthContext";
 
 const days = [
   "Lundi",
@@ -18,18 +22,24 @@ const GroupList = () => {
   const [meetingDay, setMeetingDay] = useState("");
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const { user } = useAuth();
+  const [groupToEdit, setGroupToEdit] = useState(null);
+  const [showManageModal, setShowManageModal] = useState(false);
+
+  const fetchGroups = async () => {
+    try {
+      const res = await API.get("/groups");
+      setGroups(res.data);
+      setFiltered(res.data);
+    } catch (err) {
+      setError("Impossible de charger les groupes");
+    }
+  };
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const res = await API.get("/groups");
-        setGroups(res.data);
-        setFiltered(res.data);
-      } catch (err) {
-        setError("Impossible de charger les groupes");
-      }
-    };
-
     fetchGroups();
   }, []);
 
@@ -52,9 +62,55 @@ const GroupList = () => {
     setFiltered(result);
   }, [meetingDay, search, groups]);
 
+  const handleCreateGroup = async () => {
+    if (!name) return toast.error("Le nom est requis");
+
+    try {
+      await API.post("/groups", { name, description });
+      toast.success("Groupe créé !");
+      setShowModal(false);
+      setName("");
+      setDescription("");
+      fetchGroups();
+    } catch (err) {
+      toast.error("Erreur lors de la création");
+    }
+  };
+
+  const handleUpdateGroup = async (data) => {
+    try {
+      await API.patch(`/groups/${groupToEdit._id}`, data);
+      const refreshed = await API.get(`/groups/${groupToEdit._id}`);
+      setGroupToEdit(refreshed.data); // remet à jour la modale
+      toast.success("Groupe mis à jour !");
+      fetchGroups(); // met à jour la liste filtrée
+    } catch (err) {
+      toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    try {
+      await API.delete(`/groups/${groupToEdit._id}`);
+      toast.success("Groupe supprimé !");
+      setShowManageModal(false);
+      fetchGroups();
+    } catch (err) {
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-center mb-6">Trouver un groupe</h1>
+      <div className="flex justify-between items-center mb-6 max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold">Trouver un groupe</h1>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          + Créer un groupe
+        </button>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6 max-w-3xl mx-auto">
         <input
@@ -93,7 +149,7 @@ const GroupList = () => {
               </h2>
               <p className="text-gray-600 mt-2">{group.description}</p>
               <div className="mt-4 text-sm text-gray-500">
-                📍 {group.location} <br />
+                📍 {group.location || "Non définie"} <br />
                 🗓️ {group.meetingDay}
               </div>
               <Link to={`/groups/${group._id}`}>
@@ -101,9 +157,86 @@ const GroupList = () => {
                   Voir le groupe
                 </button>
               </Link>
+              {user?.role === "admin" && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await API.get(`/groups/${group._id}`); // 👈 fetch avec populate(members)
+                      setGroupToEdit(res.data); // ✅ avec des objets membres complets
+                      setShowManageModal(true);
+                    } catch (error) {
+                      toast.error("Erreur lors du chargement du groupe");
+                    }
+                  }}
+                  className="mt-2 flex items-center gap-2 text-sm text-yellow-600 hover:text-yellow-700"
+                >
+                  <Settings className="w-4 h-4" />
+                  Gérer
+                </button>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* MODALE */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            <h2 className="text-xl font-bold mb-4">Créer un groupe</h2>
+
+            <input
+              type="text"
+              placeholder="Nom du groupe"
+              className="w-full mb-3 px-4 py-2 border rounded"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <textarea
+              placeholder="Description (optionnel)"
+              className="w-full mb-4 px-4 py-2 border rounded"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+
+            <select
+              value={meetingDay}
+              onChange={(e) => setMeetingDay(e.target.value)}
+              className="w-full mb-4 px-4 py-2 border rounded"
+            >
+              <option value="">Sélectionner un jour de réunion</option>
+              {days.map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateGroup}
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showManageModal && groupToEdit && (
+        <ManageGroupModal
+          group={groupToEdit}
+          members={groupToEdit.members}
+          onClose={() => setShowManageModal(false)}
+          onUpdate={handleUpdateGroup}
+          onDelete={handleDeleteGroup}
+        />
       )}
     </div>
   );

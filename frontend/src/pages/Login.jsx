@@ -13,8 +13,9 @@ const Login = () => {
     e.preventDefault();
     try {
       const res = await Api.post('/auth/login', { email, password });
-      login(res.data); // ✅ stocke le token et l'user dans le context
-      console.log("🧠 Réponse login :", res.data);
+      login(res.data); 
+      console.log("🧠 Résultat login :", res.data.user);
+
       navigate('/dashboard');
     } catch (err) {
       console.error("❌ Erreur de connexion :", err.response?.data?.message || err.message);

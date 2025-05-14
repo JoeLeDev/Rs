@@ -10,7 +10,7 @@ const groupSchema = new mongoose.Schema({
   roles: [
     {
       userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      role: { type: String, enum: ["pilote"] }
+      role: { type: String, enum: ["pilote","membre"], default: "membre" }
     }
   ]
 });
