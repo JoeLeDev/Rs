@@ -126,6 +126,14 @@ exports.joinGroup = async (req, res) => {
 
     if (!isAlreadyMember) {
       group.members.push(req.user.id);
+      group.memberInfos.push({ userId: req.user.id, joinedAt: new Date() });
+      await group.save();
+
+      const hasRole = group.roles.some((r) => r.userId.toString() === userId);
+      if (!hasRole) {
+        group.roles.push({ userId, role: "membre" }); // 👈 obligatoire
+      }
+
       await group.save();
     }
 
@@ -191,6 +199,74 @@ exports.updateGroupRole = async (req, res) => {
 
   } catch (err) {
     console.error("Erreur PATCH /groups/:id/roles :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// 🔍 Obtenir les membres d'un groupe
+exports.getGroupMembers = async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id)
+      .populate("members", "username email")
+      .populate("roles.userId", "username email")
+      .populate("memberInfos.userId", "username email");
+
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    const members = group.members.map((member) => {
+      const role = group.roles.find((r) => r.userId.toString() === member._id.toString());
+      const info = group.memberInfos.find((i) => i.userId.toString() === member._id.toString());
+
+      return {
+        _id: member._id,
+        username: member.username,
+        email: member.email,
+        role: role?.role || "membre",
+        joinedAt: info?.joinedAt || null
+      };
+    });
+
+    res.status(200).json(members);
+  } catch (err) {
+    console.error("Erreur getGroupMembers:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+
+exports.kickMember = async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  try {
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: "Groupe introuvable" });
+
+    const requesterId = req.user.id;
+
+    // 🛡 Vérifie que le membre à supprimer n'est pas un admin global
+    if (userId === requesterId)
+      return res.status(400).json({ message: "Tu ne peux pas te retirer toi-même." });
+
+    // 🛡 Autorisation : admin global ou pilote local
+    const isPilot = group.roles?.some(
+      (r) => r.role === "pilote" && r.userId.toString() === requesterId
+    );
+    const isAdmin = req.user.role === "admin";
+
+    if (!isAdmin && !isPilot)
+      return res.status(403).json({ message: "Accès refusé" });
+
+    // 🧼 Retirer le membre
+    group.members = group.members.filter((m) => m.toString() !== userId);
+    group.roles = group.roles.filter((r) => r.userId.toString() !== userId);
+    group.memberInfos = group.memberInfos.filter((m) => m.userId.toString() !== userId);
+
+    await group.save();
+
+    res.status(200).json({ message: "Membre retiré avec succès" });
+  } catch (err) {
+    console.error("Erreur kickMember:", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };

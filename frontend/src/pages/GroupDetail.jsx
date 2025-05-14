@@ -6,6 +6,7 @@ import API from "../api/axios";
 import { useAuth } from "../contexts/AuthContext";
 import { defineAbilityFor } from "../abilities/ability";
 import ManageGroupModal from "../components/ManageModal";
+import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 const GroupDetail = () => {
@@ -36,6 +37,14 @@ const GroupDetail = () => {
     });
   };
 
+  const isAdmin = user?.role === "admin";
+  const isPilot = group?.roles?.some(
+    (r) =>
+      r.role === "pilote" && (r.userId === user.id || r.userId?._id === user.id)
+  );
+
+  const canManageMembers = isAdmin || isPilot;
+
   const handleToggleMembership = async () => {
     const wasMember = isMember();
 
@@ -46,7 +55,9 @@ const GroupDetail = () => {
       const res = await API.get(`/groups/${id}`);
       setGroup(res.data);
 
-      toast.success(wasMember ? "Tu as quitté le groupe." : "Tu as rejoint le groupe !");
+      toast.success(
+        wasMember ? "Tu as quitté le groupe." : "Tu as rejoint le groupe !"
+      );
     } catch (err) {
       toast.error("Erreur lors de l'action.");
     }
@@ -69,23 +80,37 @@ const GroupDetail = () => {
 
   const ability = defineAbilityFor(user, group);
 
+  const handleOpenManageModal = async () => {
+    try {
+      const res = await API.get(`/groups/${id}`);
+      setGroup(res.data); // ✅ ici on a les membres populés
+      setShowModal(true);
+    } catch (err) {
+      toast.error("Erreur lors du chargement du groupe");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div
         className="bg-blue-700 text-white py-16 px-6 text-center bg-cover bg-center"
-        style={{ backgroundImage: "url('https://source.unsplash.com/1600x400/?community,people')" }}
+        style={{
+          backgroundImage:
+            "url('https://source.unsplash.com/1600x400/?community,people')",
+        }}
       >
         <h1 className="text-4xl font-bold mb-2 drop-shadow-sm">{group.name}</h1>
         <p className="flex justify-center gap-4 text-blue-100 items-center">
           <Calendar className="w-5 h-5" /> {group.meetingDay}
-          <Users className="w-5 h-5" /> {group.members?.length} membre{group.members?.length > 1 ? 's' : ''}
+          <Users className="w-5 h-5" /> {group.members?.length} membre
+          {group.members?.length > 1 ? "s" : ""}
         </p>
 
         <div className="mt-6 flex justify-center gap-4 flex-wrap">
           {ability.can("update", "Group") && (
             <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-300"
+              onClick={handleOpenManageModal}
+              className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded hover:bg-yellow-300"
             >
               <Settings className="w-4 h-4" /> Gérer le groupe
             </button>
@@ -101,6 +126,14 @@ const GroupDetail = () => {
           >
             {isMember() ? "Quitter le groupe" : "Rejoindre le groupe"}
           </button>
+
+          {canManageMembers && (
+            <Link to={`/groups/${group._id}/members`}>
+              <button className=" bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                Gérer les membres
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -122,6 +155,7 @@ const GroupDetail = () => {
       {showModal && (
         <ManageGroupModal
           group={group}
+          members={group.members}
           onClose={() => setShowModal(false)}
           onUpdate={handleUpdate}
           onDelete={handleDelete}

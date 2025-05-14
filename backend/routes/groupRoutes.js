@@ -12,6 +12,8 @@ router.get('/:id', auth, groupController.getGroupById);
 router.patch('/:id/join', auth, loadGroup, groupController.joinGroup);
 router.patch('/:id/leave', auth, loadGroup, groupController.leaveGroup);
 router.patch("/:id/roles", auth, checkAbility("update", "Group"), groupController.updateGroupRole);
+router.get("/:id/members", auth, groupController.getGroupMembers);
+router.patch(":id/kick", auth, groupController.kickMember);
 
 
 

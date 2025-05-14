@@ -12,7 +12,14 @@ const groupSchema = new mongoose.Schema({
       userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       role: { type: String, enum: ["pilote","membre"], default: "membre" }
     }
+  ],
+  memberInfos: [
+    {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      joinedAt: { type: Date, default: Date.now }
+    }
   ]
+  
 });
 
 module.exports = mongoose.model("Group", groupSchema);

@@ -6,6 +6,7 @@ import GroupList from "./pages/GroupList";
 import Acceuil from "./pages/Acceuil";
 import GroupDetail from "./pages/GroupDetail";
 import Navbar from "./components/Navbar.jsx";
+import GroupMembers from "./pages/GroupMembers";
 import { ToastContainer } from 'react-toastify';
 
 function App() {
@@ -28,11 +29,10 @@ function App() {
           <Route path="/groups" element={<GroupList />} />
           <Route
             path="/groups/:id"
-            element={
-                <GroupDetail />
-
-            }
+            element={<GroupDetail />}
           />
+          <Route path="/groups/:id/members" element={<GroupMembers />} />
+
         </Routes>
       </div>
     </div>
