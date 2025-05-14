@@ -5,6 +5,8 @@ import { toast } from "react-toastify";
 import { Settings } from "lucide-react";
 import ManageGroupModal from "../components/ManageModal";
 import { useAuth } from "../contexts/AuthContext";
+import { Search } from "lucide-react";
+import FilterDropdown from "../components/FilterDropdown";
 
 const days = [
   "Lundi",
@@ -117,12 +119,23 @@ const GroupList = () => {
     }
   };
 
-  const getTitle = () => {
-    if (membershipFilter === "joined") return "Mes groupes";
-    if (membershipFilter === "not_joined") return "Groupes disponibles";
-    if (meetingDay) return `Groupes du ${meetingDay}`;
-    return "Tous les groupes";
-  };
+const getTitle = () => {
+  const day = meetingDay;
+  const membership = membershipFilter;
+
+  if (membership === "joined" && day)
+    return `Mes groupes du ${day}`;
+  if (membership === "not_joined" && day)
+    return `Groupes disponibles du ${day}`;
+  if (membership === "joined")
+    return `Mes groupes`;
+  if (membership === "not_joined")
+    return `Groupes disponibles`;
+  if (day)
+    return `Groupes du ${day}`;
+  return "Tous les groupes";
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -136,50 +149,61 @@ const GroupList = () => {
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6 max-w-3xl mx-auto">
-        <input
-          type="text"
-          placeholder="Rechercher un groupe..."
-          className="px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring focus:ring-blue-500 w-full"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-wrap justify-center items-center gap-4 mb-6 max-w-5xl mx-auto">
+        {/* 🔍 Barre de recherche stylée avec icône */}
+        <div className="relative w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Rechercher un groupe..."
+            className="pl-10 pr-4 py-2 w-full sm:w-64 rounded-full border border-gray-300 shadow-sm focus:outline-none focus:ring focus:ring-blue-500 text-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        </div>
+
+        {/* 📅 Dropdown jour de réunion */}
+        <FilterDropdown
+          label={meetingDay || "Jour de réunion"}
+          options={days}
+          selected={meetingDay}
+          onSelect={setMeetingDay}
         />
 
-        <select
-          value={meetingDay}
-          onChange={(e) => setMeetingDay(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring focus:ring-blue-500 bg-white"
-        >
-          <option value="">Tous les jours</option>
-          {days.map((day) => (
-            <option key={day} value={day}>
-              {day}
-            </option>
-          ))}
-        </select>
+        {/* 👥 Dropdown filtre d'appartenance */}
+        <FilterDropdown
+          label={membershipFilter === "joined" ? "Mes groupes" : membershipFilter === "not_joined" ? "Groupes disponibles" : "Tous les groupes"}
+          options={["Mes groupes", "Groupes disponibles"]}
+          selected={
+            membershipFilter === "joined"
+              ? "Mes groupes"
+              : membershipFilter === "not_joined"
+              ? "Groupes disponibles"
+              : ""
+          }
+          onSelect={(val) =>
+            setMembershipFilter(
+              val === "Mes groupes"
+                ? "joined"
+                : val === "Groupes disponibles"
+                ? "not_joined"
+                : "all"
+            )
+          }
+        />
 
-        <select
-          value={membershipFilter}
-          onChange={(e) => setMembershipFilter(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-300 shadow-sm bg-white"
-        >
-          <option value="all">Tous les groupes</option>
-          <option value="joined">Mes groupes</option>
-          <option value="not_joined">Groupes disponibles</option>
-        </select>
-
+        {/* ♻️ Bouton Reset */}
         <button
           onClick={() => {
             setSearch("");
             setMeetingDay("");
             setMembershipFilter("all");
           }}
-          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm"
+          className="px-4 py-2 rounded-full bg-gray-300 hover:bg-gray-400 text-sm"
         >
-          Réinitialiser les filtres
+          Réinitialiser
         </button>
       </div>
-
       {error ? (
         <p className="text-red-500 text-center">{error}</p>
       ) : (
