@@ -28,6 +28,7 @@ const GroupList = () => {
   const { user } = useAuth();
   const [groupToEdit, setGroupToEdit] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [membershipFilter, setMembershipFilter] = useState("all");
 
   const fetchGroups = async () => {
     try {
@@ -41,15 +42,31 @@ const GroupList = () => {
 
   useEffect(() => {
     fetchGroups();
-  }, []);
 
-  useEffect(() => {
     let result = [...groups];
 
+    // 📅 Filtre par jour
     if (meetingDay) {
       result = result.filter((group) => group.meetingDay === meetingDay);
     }
 
+    // 👥 Filtre par appartenance
+    if (membershipFilter === "joined") {
+      result = result.filter((group) =>
+        group.members.some((m) =>
+          typeof m === "object" ? m._id === user._id : m === user._id
+        )
+      );
+    } else if (membershipFilter === "not_joined") {
+      result = result.filter(
+        (group) =>
+          !group.members.some((m) =>
+            typeof m === "object" ? m._id === user._id : m === user._id
+          )
+      );
+    }
+
+    // 🔎 Filtre texte
     if (search.trim() !== "") {
       const lower = search.toLowerCase();
       result = result.filter(
@@ -60,7 +77,7 @@ const GroupList = () => {
     }
 
     setFiltered(result);
-  }, [meetingDay, search, groups]);
+  }, [groups, meetingDay, membershipFilter, search]);
 
   const handleCreateGroup = async () => {
     if (!name) return toast.error("Le nom est requis");
@@ -100,10 +117,17 @@ const GroupList = () => {
     }
   };
 
+  const getTitle = () => {
+    if (membershipFilter === "joined") return "Mes groupes";
+    if (membershipFilter === "not_joined") return "Groupes disponibles";
+    if (meetingDay) return `Groupes du ${meetingDay}`;
+    return "Tous les groupes";
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="flex justify-between items-center mb-6 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold">Trouver un groupe</h1>
+        <h2 className="text-2xl font-bold mb-4 text-center">{getTitle()}</h2>
         <button
           onClick={() => setShowModal(true)}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
@@ -133,6 +157,27 @@ const GroupList = () => {
             </option>
           ))}
         </select>
+
+        <select
+          value={membershipFilter}
+          onChange={(e) => setMembershipFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-gray-300 shadow-sm bg-white"
+        >
+          <option value="all">Tous les groupes</option>
+          <option value="joined">Mes groupes</option>
+          <option value="not_joined">Groupes disponibles</option>
+        </select>
+
+        <button
+          onClick={() => {
+            setSearch("");
+            setMeetingDay("");
+            setMembershipFilter("all");
+          }}
+          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm"
+        >
+          Réinitialiser les filtres
+        </button>
       </div>
 
       {error ? (
