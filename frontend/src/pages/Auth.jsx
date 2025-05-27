@@ -52,17 +52,20 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await signUp(email, password, `${firstName} ${lastName}`, country);
+      await signUp(email, password, firstName, lastName, country);
+      console.log("Tentative d'inscription avec :", {email, password, firstName, lastName, country});
+      
       toast({
         title: "Inscription réussie",
         description: "Vérifiez votre email pour confirmer votre compte.",
       });
       navigate("/dashboard");
     } catch (error) {
+      console.error("Erreur d'inscription :", error);
       toast({
         variant: "destructive",
         title: "Erreur d'inscription",
-        description: error.message,
+        description: error.message || error.code,
       });
     } finally {
       setLoading(false);

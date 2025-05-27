@@ -18,7 +18,7 @@ function App() {
       <Toaster />
       {/* Routes */}
       <Routes>
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/login" element={<Auth />} />
         <Route
           path="/"
           element={
