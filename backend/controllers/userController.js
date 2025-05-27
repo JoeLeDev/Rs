@@ -1,27 +1,24 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require("../models/User");
 
+exports.syncUser = async (req, res) => {
+  const { firebaseUid, email, username, imageUrl } = req.body;
 
-exports.updateUser = async (req, res) => {
-    const userId = req.user.id;
-    const { email, password, username } = req.body;
-  
-    try {
-      const updateData = {};
-      if (email) updateData.email = email;
-      if (username) updateData.username = username;
-      if (password) {
-        const salt = await bcrypt.genSalt(10);
-        updateData.password = await bcrypt.hash(password, salt);
-      }
-  
-      const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
-  
-      res.status(200).json({ user: updatedUser });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Erreur lors de la mise à jour du profil" });
+  try {
+    let user = await User.findOne({ firebaseUid });
+
+    if (!user) {
+      user = await User.create({
+        firebaseUid,
+        email,
+        username,
+        imageUrl: imageUrl || "",
+        role: "user", // par défaut
+      });
     }
-  };
-  
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Erreur syncUser :", error);
+    res.status(500).json({ message: "Erreur lors de la synchronisation" });
+  }
+};

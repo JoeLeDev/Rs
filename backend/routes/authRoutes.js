@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { register, login } = require('../controllers/authController');
-const { updateUser } = require('../controllers/userController');
+const { updateUser, syncUser } = require('../controllers/userController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const upload = require("../middlewares/uploadMiddleware");
 const User = require("../models/User");
@@ -10,6 +10,7 @@ const { getAllGroups } = require("../controllers/groupController");
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/sync', syncUser);
 // Route protégée pour la mise à jour de l'utilisateur
 router.patch("/update", authMiddleware, updateUser);
 
