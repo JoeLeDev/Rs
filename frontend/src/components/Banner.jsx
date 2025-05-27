@@ -1,7 +1,7 @@
 const Banner = ({ image, title, subtitle, height = "h-[400px]", onScrollClick }) => {
   return (
     <div
-      className={`relative w-full bg-cover bg-center flex flex-col items-center justify-center ${height}`}
+      className={`relative w-full bg-cover bg-center flex items-center justify-center ${height}`}
       style={{ backgroundImage: `url(${image})` }}
     >
       {/* Overlay */}

@@ -1,33 +1,25 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const admin = require("firebase-admin");
+const serviceAccount = require("../config/serviceAccountKey.json"); // à récupérer de Firebase
 
-const authMiddleware = async (req, res, next) => {
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
+module.exports = async function (req, res, next) {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Non autorisé" });
   }
 
   const token = authHeader.split(" ")[1];
-  console.log("🔐 Token reçu :", token);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select("-password");
-
-    if (!user) return res.status(401).json({ message: "Utilisateur non trouvé" });
-
-    req.user = {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    };
-
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({ message: "Token invalide" });
   }
 };
-
-module.exports = authMiddleware;

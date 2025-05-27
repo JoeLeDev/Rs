@@ -16,9 +16,19 @@
   "dependencies": {
     "@casl/ability": "^6.7.3",
     "@casl/react": "^5.0.0",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.12",
+    "@radix-ui/react-toast": "^1.2.14",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "firebase": "^11.8.1",
+    "lucide-react": "^0.511.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "tailwind-merge": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7"
   }
 }

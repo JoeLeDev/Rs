@@ -49,4 +49,9 @@ router.patch(
     }
   }
 );
+
+router.get('/validate', authMiddleware, (req, res) => {
+  res.status(200).json({ message: 'Token valide' });
+});
+
 module.exports = router;

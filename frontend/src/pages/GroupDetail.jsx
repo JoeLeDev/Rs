@@ -1,35 +1,27 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Users, Calendar, MapPin, UserCircle, Settings } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Users, Calendar, MapPin, Settings } from "lucide-react";
 import { toast } from "react-toastify";
-import API from "../api/axios";
+import API from "../api/Axios";
 import { useAuth } from "../contexts/AuthContext";
 import { defineAbilityFor } from "../abilities/ability";
 import ManageGroupModal from "../components/ManageModal";
-import { Link } from "react-router-dom";
+import PostForm from "../components/post/PostForm";
+import PostList from "../components/post/PostList";
 import "react-toastify/dist/ReactToastify.css";
+
 
 const GroupDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const [group, setGroup] = useState(null);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [posts, setPosts] = useState([]);
 
-  useEffect(() => {
-    fetchGroup();
-  }, []);
-
-  const fetchGroup = async () => {
-    try {
-      const res = await API.get(`/groups/${id}`);
-      setGroup(res.data);
-    } catch (err) {
-      setError("Groupe introuvable");
-    }
-  };
-
+  // Vérifie si l'utilisateur est membre
   const isMember = () => {
     return group?.members?.some((m) => {
       const memberId = typeof m === "object" ? m._id?.toString() : m.toString();
@@ -45,28 +37,52 @@ const GroupDetail = () => {
 
   const canManageMembers = isAdmin || isPilot;
 
+  const fetchGroup = async () => {
+    try {
+      const res = await API.get(`/groups/${id}`);
+      setGroup(res.data);
+    } catch (err) {
+      console.error("Erreur lors du fetchGroup :", err);
+      setError("Groupe introuvable");
+    }
+  };
+
+  const fetchPosts = async () => {
+    try {
+      const res = await API.get(`/posts/group/${id}?page=1`);
+      setPosts(res.data.posts);
+    } catch (err) {
+      console.error("Erreur lors du chargement des posts :", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroup();
+  }, []);
+
+  useEffect(() => {
+    if (group?._id) {
+      fetchPosts();
+    }
+  }, [group?._id]);
+
   const handleToggleMembership = async () => {
     const wasMember = isMember();
 
     try {
       const route = wasMember ? "leave" : "join";
       await API.patch(`/groups/${id}/${route}`);
-
       const res = await API.get(`/groups/${id}`);
       setGroup(res.data);
-
-      toast.success(
-        wasMember ? "Tu as quitté le groupe." : "Tu as rejoint le groupe !"
-      );
+      toast.success(wasMember ? "Tu as quitté le groupe." : "Tu as rejoint le groupe !");
     } catch (err) {
       toast.error("Erreur lors de l'action.");
     }
   };
 
   const handleUpdate = async (data) => {
-    await API.patch(`/groups/${id}`, data);
-    const updated = await API.get(`/groups/${id}`);
-    setGroup(updated.data);
+    const res = await API.patch(`/groups/${id}`, data);
+    setGroup(res.data);
   };
 
   const handleDelete = async () => {
@@ -75,23 +91,24 @@ const GroupDetail = () => {
     navigate("/groups");
   };
 
-  if (error) return <p className="text-red-600 text-center mt-6">{error}</p>;
-  if (!group) return <p className="text-center mt-6">Chargement...</p>;
-
-  const ability = defineAbilityFor(user, group);
-
   const handleOpenManageModal = async () => {
     try {
       const res = await API.get(`/groups/${id}`);
-      setGroup(res.data); // ✅ ici on a les membres populés
+      setGroup(res.data);
       setShowModal(true);
     } catch (err) {
       toast.error("Erreur lors du chargement du groupe");
     }
   };
 
+  if (error) return <p className="text-red-600 text-center mt-6">{error}</p>;
+  if (!group) return <p className="text-center mt-6">Chargement...</p>;
+
+  const ability = defineAbilityFor(user, group);
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Bannière */}
       <div
         className="bg-blue-700 text-white py-16 px-6 text-center bg-cover bg-center"
         style={{
@@ -129,7 +146,7 @@ const GroupDetail = () => {
 
           {canManageMembers && (
             <Link to={`/groups/${group._id}/members`}>
-              <button className=" bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+              <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                 Gérer les membres
               </button>
             </Link>
@@ -137,19 +154,24 @@ const GroupDetail = () => {
         </div>
       </div>
 
+      {/* Détails */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <h2 className="text-xl font-semibold mb-2">Description</h2>
           <p className="text-gray-700">{group.description}</p>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-gray-600 space-y-1">
-            <p className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" /> Localisation : Non définie
-            </p>
-          </div>
+        <div className="text-gray-600 space-y-1 mb-6">
+          <p className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" /> Localisation : Non définie
+          </p>
         </div>
+
+        {isMember() && (
+          <PostForm groupId={group._id} user={user} onPostCreated={fetchPosts} />
+        )}
+
+        <PostList groupId={group._id} currentUser={user} posts={posts} onDelete={fetchPosts} />
       </div>
 
       {showModal && (
