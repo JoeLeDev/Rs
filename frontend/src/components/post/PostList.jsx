@@ -7,7 +7,7 @@ import CommentSection from "./CommentSection";
 import { toast } from "react-toastify";
 
 const PostList = ({ posts = [], onDelete }) => {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [showMenuId, setShowMenuId] = useState(null);
   const [editPost, setEditPost] = useState(null);
   const [showComments, setShowComments] = useState({});
@@ -54,7 +54,7 @@ const PostList = ({ posts = [], onDelete }) => {
   };
 
   const isLiked = (post) => {
-    return post.likes?.some(likeId => likeId?.toString() === user?._id?.toString());
+    return post.likes?.some(likeId => likeId?.toString() === userData?._id?.toString());
   };
 
   if (!posts.length)
@@ -64,113 +64,116 @@ const PostList = ({ posts = [], onDelete }) => {
 
   return (
     <div className="space-y-6 px-4 max-w-4xl mx-auto pb-12">
-      {posts.map((post) => (
-        <div
-          key={post._id}
-          className="bg-white p-6 rounded-xl shadow-sm relative"
-        >
-          {(user?._id === post.author._id || user?.role === "admin") && (
-            <div className="absolute top-3 right-3">
-              <button
-                onClick={() =>
-                  setShowMenuId((prev) => (prev === post._id ? null : post._id))
-                }
-              >
-                <MoreVertical className="w-5 h-5 text-gray-500 hover:text-black" />
-              </button>
-              {showMenuId === post._id && (
-                <div className="absolute right-0 mt-2 bg-white border rounded shadow z-10">
-                  <button
-                    onClick={() => setEditPost(post)}
-                    className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-sm"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Modifier
-                  </button>
-                  <button
-                    onClick={() => handleDelete(post._id)}
-                    className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-sm text-red-600"
-                  >
-                    <Trash className="w-4 h-4" />
-                    Supprimer
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <h3 className="font-bold text-gray-800 mb-1">
-            {post.author?.username || "Utilisateur"}
-          </h3>
-          <p className="text-gray-500 text-sm mb-2">
-            {post.author?.role === "pilote" && (
-              <span className="text-green-500 font-semibold">Pilote</span>
-            )}
-          </p>
-          <p className="text-gray-700 whitespace-pre-line">{post.content}</p>
-
-          {post.fileUrl && (
-            <div className="mt-3">
-              {post.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                <img
-                  src={post.fileUrl}
-                  alt="Media"
-                  className="max-h-64 rounded object-contain border"
-                />
-              ) : post.fileUrl.endsWith(".mp4") ? (
-                <video controls className="w-full max-h-64 rounded border">
-                  <source src={post.fileUrl} type="video/mp4" />
-                </video>
-              ) : post.fileUrl.endsWith(".mp3") ? (
-                <audio controls className="w-full mt-2">
-                  <source src={post.fileUrl} type="audio/mpeg" />
-                </audio>
-              ) : (
-                <a
-                  href={post.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline flex items-center gap-2 mt-2"
+      {posts.map((post) => {
+        if (!post.author) return null; // Sécurité : ignorer les posts orphelins
+        return (
+          <div
+            key={post._id}
+            className="bg-white p-6 rounded-xl shadow-sm relative"
+          >
+            {(userData?._id === post.author._id || userData?.role === "admin") && (
+              <div className="absolute top-3 right-3">
+                <button
+                  onClick={() =>
+                    setShowMenuId((prev) => (prev === post._id ? null : post._id))
+                  }
                 >
-                  <FileText className="w-4 h-4" />
-                  Voir le fichier
-                </a>
+                  <MoreVertical className="w-5 h-5 text-gray-500 hover:text-black" />
+                </button>
+                {showMenuId === post._id && (
+                  <div className="absolute right-0 mt-2 bg-white border rounded shadow z-10">
+                    <button
+                      onClick={() => setEditPost(post)}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-sm"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDelete(post._id)}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-sm text-red-600"
+                    >
+                      <Trash className="w-4 h-4" />
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <h3 className="font-bold text-gray-800 mb-1">
+              {post.author?.username || "Utilisateur"}
+            </h3>
+            <p className="text-gray-500 text-sm mb-2">
+              {post.author?.role === "pilote" && (
+                <span className="text-green-500 font-semibold">Pilote</span>
               )}
+            </p>
+            <p className="text-gray-700 whitespace-pre-line">{post.content}</p>
+
+            {post.fileUrl && (
+              <div className="mt-3">
+                {post.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                  <img
+                    src={post.fileUrl}
+                    alt="Media"
+                    className="max-h-64 rounded object-contain border"
+                  />
+                ) : post.fileUrl.endsWith(".mp4") ? (
+                  <video controls className="w-full max-h-64 rounded border">
+                    <source src={post.fileUrl} type="video/mp4" />
+                  </video>
+                ) : post.fileUrl.endsWith(".mp3") ? (
+                  <audio controls className="w-full mt-2">
+                    <source src={post.fileUrl} type="audio/mpeg" />
+                  </audio>
+                ) : (
+                  <a
+                    href={post.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline flex items-center gap-2 mt-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Voir le fichier
+                  </a>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 mt-4 border-t pt-4">
+              <button
+                onClick={() => isLiked(post) ? handleUnlike(post._id) : handleLike(post._id)}
+                className={`flex items-center gap-2 ${
+                  isLiked(post) ? "text-blue-600" : "text-gray-500"
+                }`}
+              >
+                <ThumbsUp className="w-5 h-5" />
+                <span>{post.likes?.length || 0}</span>
+              </button>
+              <button
+                onClick={() => toggleComments(post._id)}
+                className="flex items-center gap-2 text-gray-500"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>{post.comments?.length || 0}</span>
+              </button>
             </div>
-          )}
 
-          <div className="flex items-center gap-4 mt-4 border-t pt-4">
-            <button
-              onClick={() => isLiked(post) ? handleUnlike(post._id) : handleLike(post._id)}
-              className={`flex items-center gap-2 ${
-                isLiked(post) ? "text-blue-600" : "text-gray-500"
-              }`}
-            >
-              <ThumbsUp className="w-5 h-5" />
-              <span>{post.likes?.length || 0}</span>
-            </button>
-            <button
-              onClick={() => toggleComments(post._id)}
-              className="flex items-center gap-2 text-gray-500"
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span>{post.comments?.length || 0}</span>
-            </button>
+            {showComments[post._id] && (
+              <CommentSection post={post} onUpdate={onDelete} />
+            )}
+
+            <p className="text-gray-500 text-sm mt-2">
+              {new Date(post.createdAt).toLocaleDateString("fr-FR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
           </div>
-
-          {showComments[post._id] && (
-            <CommentSection post={post} onUpdate={onDelete} />
-          )}
-
-          <p className="text-gray-500 text-sm mt-2">
-            {new Date(post.createdAt).toLocaleDateString("fr-FR", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-        </div>
-      ))}
+        );
+      })}
 
       {editPost && (
         <PostEditModal

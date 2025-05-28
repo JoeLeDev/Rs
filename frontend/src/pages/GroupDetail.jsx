@@ -14,38 +14,44 @@ import "react-toastify/dist/ReactToastify.css";
 const GroupDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
 
   const [group, setGroup] = useState(null);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [posts, setPosts] = useState([]);
 
-  // Vérifie si l'utilisateur est membre
-  const isMember = () => {
-    return group?.members?.some((m) => {
-      const memberId = typeof m === "object" ? m._id?.toString() : m.toString();
-      return memberId === user?._id?.toString();
+  const fetchGroup = async () => {
+    const token = await user.getIdToken();
+    const res = await API.get(`/groups/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
+    setGroup(res.data);
+  };
+
+  useEffect(() => { if (user) fetchGroup(); }, [user, id]);
+
+  const isMember = () => group?.members?.some(m => m._id === userData?._id);
+
+  const handleJoin = async () => {
+    const token = await user.getIdToken();
+    await API.patch(`/groups/${id}/join`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    fetchGroup();
+  };
+
+  const handleLeave = async () => {
+    const token = await user.getIdToken();
+    await API.patch(`/groups/${id}/leave`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    fetchGroup();
   };
 
   const isAdmin = user?.role === "admin";
   const isPilot = group?.roles?.some(
     (r) =>
-      r.role === "pilote" && (r.userId === user.id || r.userId?._id === user.id)
+      r.role === "pilote" && (r.userId === userData?._id || r.userId?._id === userData?._id)
   );
 
   const canManageMembers = isAdmin || isPilot;
-
-  const fetchGroup = async () => {
-    try {
-      const res = await API.get(`/groups/${id}`);
-      setGroup(res.data);
-    } catch (err) {
-      console.error("Erreur lors du fetchGroup :", err);
-      setError("Groupe introuvable");
-    }
-  };
 
   const fetchPosts = async () => {
     try {
@@ -57,28 +63,10 @@ const GroupDetail = () => {
   };
 
   useEffect(() => {
-    fetchGroup();
-  }, []);
-
-  useEffect(() => {
     if (group?._id) {
       fetchPosts();
     }
   }, [group?._id]);
-
-  const handleToggleMembership = async () => {
-    const wasMember = isMember();
-
-    try {
-      const route = wasMember ? "leave" : "join";
-      await API.patch(`/groups/${id}/${route}`);
-      const res = await API.get(`/groups/${id}`);
-      setGroup(res.data);
-      toast.success(wasMember ? "Tu as quitté le groupe." : "Tu as rejoint le groupe !");
-    } catch (err) {
-      toast.error("Erreur lors de l'action.");
-    }
-  };
 
   const handleUpdate = async (data) => {
     const res = await API.patch(`/groups/${id}`, data);
@@ -104,7 +92,7 @@ const GroupDetail = () => {
   if (error) return <p className="text-red-600 text-center mt-6">{error}</p>;
   if (!group) return <p className="text-center mt-6">Chargement...</p>;
 
-  const ability = defineAbilityFor(user, group);
+  const ability = defineAbilityFor(userData, group);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -134,7 +122,7 @@ const GroupDetail = () => {
           )}
 
           <button
-            onClick={handleToggleMembership}
+            onClick={isMember() ? handleLeave : handleJoin}
             className={`px-4 py-2 rounded text-white transition ${
               isMember()
                 ? "bg-red-600 hover:bg-red-700"

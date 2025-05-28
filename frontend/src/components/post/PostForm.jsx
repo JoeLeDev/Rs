@@ -6,17 +6,32 @@ const PostForm = ({ groupId = null, onPostCreated }) => {
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
+  const [previewType, setPreviewType] = useState(null); // 'image', 'video', or null
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     setFile(selected);
 
-    if (selected?.type.startsWith("image/")) {
+    if (!selected) {
+      setPreview("");
+      setPreviewType(null);
+      return;
+    }
+
+    if (selected.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(selected);
+      setPreviewType('image');
+    } else if (selected.type.startsWith("video/") || selected.type === "video/quicktime") {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(selected);
+      setPreviewType('video');
     } else {
       setPreview("");
+      setPreviewType(null);
     }
   };
 
@@ -51,6 +66,8 @@ const PostForm = ({ groupId = null, onPostCreated }) => {
       if (onPostCreated) onPostCreated();
     } catch (err) {
       toast.error("Erreur lors de la publication");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,12 +81,17 @@ const PostForm = ({ groupId = null, onPostCreated }) => {
         onChange={(e) => setContent(e.target.value)}
       />
 
-      {preview && (
+      {/* Aperçu du fichier */}
+      {preview && previewType === 'image' && (
         <img
           src={preview}
           alt="preview"
           className="max-h-48 object-cover rounded mb-2"
         />
+      )}
+
+      {preview && previewType === 'video' && (
+        <video controls src={preview} className="max-h-64 rounded object-contain border mb-2" />
       )}
 
       {file && !preview && (
@@ -83,9 +105,10 @@ const PostForm = ({ groupId = null, onPostCreated }) => {
         </label>
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
         >
-          Publier
+          {loading ? "Publication..." : "Publier"}
         </button>
       </div>
     </form>

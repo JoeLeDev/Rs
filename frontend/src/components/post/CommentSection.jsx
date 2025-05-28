@@ -4,24 +4,30 @@ import API from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
 
 const CommentSection = ({ post, onUpdate }) => {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [newComment, setNewComment] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingContent, setEditingContent] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
 
   const handleAdd = async () => {
     if (!newComment.trim()) return;
     try {
+      setAddLoading(true);
       await API.post(`/posts/${post._id}/comments`, { content: newComment });
       setNewComment("");
       onUpdate();
     } catch (error) {
       console.error("Erreur lors de l'ajout du commentaire:", error);
+    } finally {
+      setAddLoading(false);
     }
   };
 
   const handleEdit = async (commentId) => {
     try {
+      setEditLoading(true);
       await API.patch(`/posts/${post._id}/comments/${commentId}`, {
         content: editingContent,
       });
@@ -29,6 +35,8 @@ const CommentSection = ({ post, onUpdate }) => {
       onUpdate();
     } catch (error) {
       console.error("Erreur lors de la modification du commentaire:", error);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -52,13 +60,13 @@ const CommentSection = ({ post, onUpdate }) => {
 
   const canDelete = (comment) => {
     return (
-      (comment?.author?._id === user?._id) || user?.role === "admin"
+      (comment?.author?._id === userData?._id) || userData?.role === "admin"
     );
   };
 
-  const canEdit = (comment) => comment?.author?._id === user?._id;
+  const canEdit = (comment) => comment?.author?._id === userData?._id;
 
-  const canHide = post?.author?._id === user?._id;
+  const canHide = post?.author?._id === userData?._id;
 
   if (!post?.comments) {
     return null;
@@ -76,7 +84,12 @@ const CommentSection = ({ post, onUpdate }) => {
                   onChange={(e) => setEditingContent(e.target.value)}
                   className="border px-2 py-1 flex-1"
                 />
-                <button onClick={() => handleEdit(comment._id)}>💾</button>
+                <button
+                  onClick={() => handleEdit(comment._id)}
+                  disabled={editLoading}
+                >
+                  💾
+                </button>
               </div>
             ) : (
               <>
@@ -121,9 +134,10 @@ const CommentSection = ({ post, onUpdate }) => {
         />
         <button
           onClick={handleAdd}
+          disabled={addLoading}
           className="bg-blue-600 text-white px-4 rounded"
         >
-          Envoyer
+          {addLoading ? "Ajout..." : "Envoyer"}
         </button>
       </div>
     </div>
