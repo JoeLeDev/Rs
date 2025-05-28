@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // Assure-toi que c’est bien vers le contexte Firebase
+import { useAuth } from "../contexts/AuthContext"; // Assure-toi que c'est bien vers le contexte Firebase
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -79,7 +79,7 @@ const Auth = () => {
           <div className="flex items-center justify-center mb-4">
             <Users className="h-12 w-12 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Circle of Life</h1>
+          <h1 className="text-3xl font-bold text-gray-900">My ICC Online</h1>
           <p className="text-gray-600">Votre réseau social par groupes</p>
         </div>
 
@@ -101,6 +101,7 @@ const Auth = () => {
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       autoComplete="email"
                       value={email}
@@ -112,6 +113,7 @@ const Auth = () => {
                     <Label htmlFor="password">Mot de passe</Label>
                     <Input
                       id="password"
+                      name="password"
                       type="password"
                       autoComplete="current-password"
                       value={password}
@@ -142,6 +144,7 @@ const Auth = () => {
                     <Input
                       id="username"
                       type="text"
+                      autoComplete="username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
@@ -154,6 +157,7 @@ const Auth = () => {
                       <Input
                         id="lastname"
                         type="text"
+                        autoComplete="family-name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         required
@@ -164,6 +168,7 @@ const Auth = () => {
                       <Input
                         id="firstname"
                         type="text"
+                        autoComplete="given-name"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         required
@@ -178,6 +183,7 @@ const Auth = () => {
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
                       className="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2"
+                      autoComplete="country"
                       required
                     >
                       <option value="">Choisir un pays</option>
@@ -196,6 +202,7 @@ const Auth = () => {
                     <Input
                       id="email-signup"
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -206,6 +213,7 @@ const Auth = () => {
                     <Input
                       id="password-signup"
                       type="password"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required

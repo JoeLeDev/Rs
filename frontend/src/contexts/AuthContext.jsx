@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [userRole, setUserRole] = useState("user");
   const [userData, setUserData] = useState(null);
 
-  // Écoute les changements d’état de connexion Firebase
+  // Écoute les changements d'état de connexion Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -25,8 +25,9 @@ export const AuthProvider = ({ children }) => {
       if (currentUser) {
         try {
           const token = await currentUser.getIdToken();
+          localStorage.setItem('token', token);
           const { data } = await axios.get(
-            "http://localhost:5000/api/auth/me",
+            "http://localhost:5001/api/auth/me",
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -39,6 +40,7 @@ export const AuthProvider = ({ children }) => {
           console.error("Erreur récupération user Mongo :", error);
         }
       } else {
+        localStorage.removeItem('token');
         setUserRole("user");
         setUserData(null);
       }
@@ -93,6 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   //  Déconnexion
   const logout = () => {
+    localStorage.removeItem('token');
     signOut(auth);
     setUser(null);
     setUserRole("user");

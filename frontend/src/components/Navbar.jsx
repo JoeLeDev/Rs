@@ -34,11 +34,11 @@ const Navbar = () => {
           </>
         ) : (
           <>
+          <Link to="/Acceuil" className="text-gray-700 hover:text-blue-600">
+              Acceuil
+            </Link>
             <Link to="/login" className="text-gray-700 hover:text-blue-600">
               Connexion
-            </Link>
-            <Link to="/register" className="text-gray-700 hover:text-blue-600">
-              Inscription
             </Link>
           </>
         )}
