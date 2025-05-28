@@ -7,6 +7,7 @@ const postSchema = new mongoose.Schema(
     fileType: { type: String }, // "image", "pdf", "video", etc. pour l'affichage
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     group: { type: mongoose.Schema.Types.ObjectId, ref: "Group" }, // null si sur le dashboard
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     comments: [
       {
         content: String,

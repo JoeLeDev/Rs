@@ -18,7 +18,7 @@ router.patch("/update", authMiddleware, updateUser);
 router.get("/", getAllGroups);
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user._id).select("-password");
     res.status(200).json(user);
   } catch (err) {
     console.error("Erreur route /me :", err);

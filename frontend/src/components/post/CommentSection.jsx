@@ -11,35 +11,58 @@ const CommentSection = ({ post, onUpdate }) => {
 
   const handleAdd = async () => {
     if (!newComment.trim()) return;
-    await API.post(`/posts/${post._id}/comments`, { content: newComment });
-    setNewComment("");
-    onUpdate();
+    try {
+      await API.post(`/posts/${post._id}/comments`, { content: newComment });
+      setNewComment("");
+      onUpdate();
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du commentaire:", error);
+    }
   };
 
   const handleEdit = async (commentId) => {
-    await API.patch(`/posts/${post._id}/comments/${commentId}`, {
-      content: editingContent,
-    });
-    setEditingId(null);
-    onUpdate();
+    try {
+      await API.patch(`/posts/${post._id}/comments/${commentId}`, {
+        content: editingContent,
+      });
+      setEditingId(null);
+      onUpdate();
+    } catch (error) {
+      console.error("Erreur lors de la modification du commentaire:", error);
+    }
   };
 
   const handleDelete = async (commentId) => {
-    await API.delete(`/posts/${post._id}/comments/${commentId}`);
-    onUpdate();
+    try {
+      await API.delete(`/posts/${post._id}/comments/${commentId}`);
+      onUpdate();
+    } catch (error) {
+      console.error("Erreur lors de la suppression du commentaire:", error);
+    }
   };
 
   const handleHide = async (commentId) => {
-    await API.patch(`/posts/${post._id}/comments/${commentId}/hide`);
-    onUpdate();
+    try {
+      await API.patch(`/posts/${post._id}/comments/${commentId}/hide`);
+      onUpdate();
+    } catch (error) {
+      console.error("Erreur lors du masquage du commentaire:", error);
+    }
   };
 
-  const canDelete = (comment) =>
-    ["admin", "gestionnaire_groupe", "pilote"].includes(user?.role);
+  const canDelete = (comment) => {
+    return (
+      (comment?.author?._id === user?._id) || user?.role === "admin"
+    );
+  };
 
-  const canEdit = (comment) => comment.author._id === user?._id;
+  const canEdit = (comment) => comment?.author?._id === user?._id;
 
-  const canHide = post.author._id === user?._id;
+  const canHide = post?.author?._id === user?._id;
+
+  if (!post?.comments) {
+    return null;
+  }
 
   return (
     <div className="mt-4 space-y-2">
@@ -58,7 +81,7 @@ const CommentSection = ({ post, onUpdate }) => {
             ) : (
               <>
                 <p className="text-sm text-gray-700">
-                  <strong>{comment.author.username}</strong> :{" "}
+                  <strong>{comment?.author?.username || "Utilisateur"}</strong> :{" "}
                   {comment.content}
                 </p>
                 <div className="flex gap-2 text-sm mt-1 text-gray-500">
@@ -98,7 +121,6 @@ const CommentSection = ({ post, onUpdate }) => {
         />
         <button
           onClick={handleAdd}
-          
           className="bg-blue-600 text-white px-4 rounded"
         >
           Envoyer

@@ -12,39 +12,43 @@ import axios from "axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // Firebase user
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState("user");
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState(null); // Mongo user
 
   // Écoute les changements d'état de connexion Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-
       if (currentUser) {
         try {
           const token = await currentUser.getIdToken();
           localStorage.setItem('token', token);
-          const { data } = await axios.get(
-            "http://localhost:5001/api/auth/me",
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          setUserRole(data.role);
-          setUserData(data);
+          try {
+            const { data } = await axios.get(
+              "http://localhost:5001/api/auth/me",
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            setUser(currentUser); // On garde l'objet Firebase
+            setUserData(data);    // On stocke les infos Mongo
+          } catch (error) {
+            console.error("Erreur récupération user Mongo :", error);
+            setUser(currentUser);
+            setUserData(null);
+          }
         } catch (error) {
-          console.error("Erreur récupération user Mongo :", error);
+          console.error("Erreur lors de la récupération du token :", error);
+          setUser(currentUser);
+          setUserData(null);
         }
       } else {
         localStorage.removeItem('token');
-        setUserRole("user");
+        setUser(null);
         setUserData(null);
       }
-
       setLoading(false);
     });
 
@@ -72,7 +76,7 @@ export const AuthProvider = ({ children }) => {
       const token = await res.user.getIdToken();
 
       await axios.post(
-        "http://localhost:5000/api/auth/sync",
+        "http://localhost:5001/api/auth/sync",
         {
           firebaseUid: res.user.uid,
           email: res.user.email,
@@ -98,16 +102,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     signOut(auth);
     setUser(null);
-    setUserRole("user");
     setUserData(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        userRole,
-        userData,
+        user,      // Firebase user (getIdToken, etc.)
+        userData,  // Mongo user (role, _id, etc.)
         login,
         signUp,
         logout,

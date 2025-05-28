@@ -31,7 +31,7 @@ exports.createGroup = async (req, res) => {
       name,
       description,
       meetingDay: "Lundi",
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       members: [],
     });
     res.status(201).json(newGroup);
@@ -121,17 +121,17 @@ exports.joinGroup = async (req, res) => {
     if (!group) return res.status(404).json({ message: "Groupe introuvable" });
 
     const isAlreadyMember = group.members.some(
-      (member) => member.toString() === req.user.id.toString()
+      (member) => member.toString() === req.user._id.toString()
     );
 
     if (!isAlreadyMember) {
-      group.members.push(req.user.id);
-      group.memberInfos.push({ userId: req.user.id, joinedAt: new Date() });
+      group.members.push(req.user._id);
+      group.memberInfos.push({ userId: req.user._id, joinedAt: new Date() });
       await group.save();
 
-      const hasRole = group.roles.some((r) => r.userId.toString() === userId);
+      const hasRole = group.roles.some((r) => r.userId.toString() === req.user._id.toString());
       if (!hasRole) {
-        group.roles.push({ userId, role: "membre" }); // 👈 obligatoire
+        group.roles.push({ userId: req.user._id, role: "membre" });
       }
 
       await group.save();
@@ -160,7 +160,7 @@ exports.leaveGroup = async (req, res) => {
 
     group.members = group.members.filter(member => {
       const memberId = typeof member === "object" ? member._id.toString() : member.toString();
-      return memberId !== req.user.id.toString();
+      return memberId !== req.user._id.toString();
     });
 
     await group.save();
@@ -184,7 +184,7 @@ exports.updateGroupRole = async (req, res) => {
     // ✅ Supprimer tous les anciens rôles "pilote"
     group.roles = group.roles.filter((r) => r.role !== "pilote");
 
-    // ✅ Si un nouveau pilote est défini, on vérifie qu’il est membre et on l’ajoute
+    // ✅ Si un nouveau pilote est défini, on vérifie qu'il est membre et on l'ajoute
     if (memberId) {
       const isMember = group.members.some((m) => m.toString() === memberId);
       if (!isMember) {
@@ -242,7 +242,7 @@ exports.kickMember = async (req, res) => {
     const group = await Group.findById(id);
     if (!group) return res.status(404).json({ message: "Groupe introuvable" });
 
-    const requesterId = req.user.id;
+    const requesterId = req.user._id;
 
     // 🛡 Vérifie que le membre à supprimer n'est pas un admin global
     if (userId === requesterId)

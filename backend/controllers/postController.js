@@ -1,5 +1,6 @@
 const Post = require("../models/Post");
 const mongoose = require("mongoose");
+const User = require("../models/User");
 
 // Créer un post
 exports.createPost = async (req, res) => {
@@ -11,7 +12,7 @@ exports.createPost = async (req, res) => {
       fileUrl,
       fileType,
       group: group || null,
-      author: req.user.id,
+      author: req.user._id,
     });
 
     res.status(201).json(post);
@@ -20,7 +21,7 @@ exports.createPost = async (req, res) => {
   }
 };
 
-// Récupérer les posts d’un groupe
+// Récupérer les posts d'un groupe
 exports.getPostsByGroup = async (req, res) => {
   const groupId = mongoose.Types.ObjectId.createFromHexString(
     req.params.groupId
@@ -86,9 +87,9 @@ exports.updatePost = async (req, res) => {
     if (!post) return res.status(404).json({ message: "Post introuvable" });
 
     console.log("Post author:", post.author.toString());
-    console.log("User ID:", req.user.id);
+    console.log("User ID:", req.user._id);
     // Seul l'auteur peut modifier
-    if (!post.author.equals(req.user.id)) {
+    if (!post.author.equals(req.user._id)) {
       return res.status(403).json({ message: "Accès refusé" });
     }
 
@@ -109,7 +110,7 @@ exports.deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post introuvable" });
 
-    const isOwner = post.author.toString() === req.user.id;
+    const isOwner = post.author.toString() === req.user._id;
     const isAdmin = req.user.role === "admin";
 
     if (!isOwner && !isAdmin) {
@@ -140,7 +141,7 @@ exports.getComment = async (req, res) => {
   }
 };
 
-// Récupérer tous les commentaires d’un post
+// Récupérer tous les commentaires d'un post
 exports.getComments = async (req, res) => {
   const { id } = req.params;
 
@@ -162,7 +163,7 @@ exports.addComment = async (req, res) => {
 
     const comment = {
       content: req.body.content,
-      author: req.user.id,
+      author: req.user._id,
     };
 
     post.comments.push(comment);
@@ -176,67 +177,69 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// ✏️ Modifier un commentaire (seul l’auteur du commentaire)
+// ✏️ Modifier un commentaire
 exports.editComment = async (req, res) => {
   const { id, commentId } = req.params;
   const { content } = req.body;
 
   try {
     const post = await Post.findById(id);
-    if (!post) return res.status(404).json({ message: "Post introuvable" });
+    if (!post) {
+      return res.status(404).json({ message: "Post introuvable" });
+    }
 
     const comment = post.comments.id(commentId);
-    if (!comment)
+    if (!comment) {
       return res.status(404).json({ message: "Commentaire introuvable" });
+    }
 
-    if (comment.author.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({ message: "Tu ne peux modifier que ton propre commentaire" });
+    if (comment.author && comment.author.toString() !== req.user._id) {
+      return res.status(403).json({ 
+        message: "Tu ne peux modifier que ton propre commentaire" 
+      });
     }
 
     comment.content = content;
     await post.save();
 
-    res.json({ message: "Commentaire modifié" });
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la modification" });
+    await post.populate('comments.author', 'username');
+
+    res.json(post.comments.id(commentId));
+  } catch (error) {
+    console.error("Erreur lors de la modification du commentaire:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-// ❌ Supprimer un commentaire (admin, pilote, gestionnaire_groupe)
+// ❌ Supprimer un commentaire
 exports.deleteComment = async (req, res) => {
   const { id, commentId } = req.params;
 
   try {
-    const post = await Post.findById(id).populate("group");
-    if (!post) return res.status(404).json({ message: "Post introuvable" });
-
-    const comment = post.comments.id(commentId);
-    if (!comment)
-      return res.status(404).json({ message: "Commentaire introuvable" });
-
-    const userId = req.user.id;
-    const isAdmin = req.user.role === "admin";
-    const group = post.group;
-
-    const isPilot = group?.roles?.some(
-      (r) => r.role === "pilote" && r.userId.toString() === userId
-    );
-    const isManager = group?.roles?.some(
-      (r) => r.role === "gestionnaire_groupe" && r.userId.toString() === userId
-    );
-
-    if (!group || !Array.isArray(group.roles)) {
-      return res.status(403).json({ message: "Accès refusé" });
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ message: "Post introuvable" });
     }
 
-    comment.remove();
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Commentaire introuvable" });
+    }
+
+    const isAuthor = comment.author && comment.author.toString() === req.user._id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ message: "Action non autorisée" });
+    }
+
+    post.comments = post.comments.filter(c => c && c._id && c._id.toString() !== commentId);
     await post.save();
 
     res.json({ message: "Commentaire supprimé" });
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la suppression" });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du commentaire:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -248,9 +251,9 @@ exports.hideComment = async (req, res) => {
     const post = await Post.findById(id);
     if (!post) return res.status(404).json({ message: "Post introuvable" });
 
-    if (post.author.toString() !== req.user.id) {
+    if (post.author.toString() !== req.user._id) {
       return res.status(403).json({
-        message: "Seul l’auteur du post peut masquer les commentaires",
+        message: "Seul l'auteur du post peut masquer les commentaires",
       });
     }
 
@@ -267,40 +270,87 @@ exports.hideComment = async (req, res) => {
   }
 };
 
-// 👍 Aimer un post
+// 👍 Like un post
 exports.likePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post introuvable" });
-
-    if (post.likes.includes(req.user.id)) {
-      return res.status(400).json({ message: "Déjà aimé" });
+    if (!post) {
+      return res.status(404).json({ message: "Post non trouvé" });
     }
 
-    post.likes.push(req.user.id);
+    if (!req.user._id) {
+      return res.status(400).json({ message: "Utilisateur non reconnu (ID MongoDB manquant)" });
+    }
+
+    // Vérifier si l'utilisateur a déjà liké le post
+    const hasLiked = post.likes.some(likeId => likeId && likeId.toString() === req.user._id);
+    if (hasLiked) {
+      return res.status(400).json({ message: "Vous avez déjà liké ce post" });
+    }
+
+    post.likes.push(req.user._id);
     await post.save();
 
+    await post.populate('author', 'username email');
+    await post.populate('comments.author', 'username');
+
     res.json(post);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de l'ajout du like" });
+  } catch (error) {
+    console.error("Erreur lors du like:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-// 👎 Ne plus aimer un post
+// 👎 Unlike un post
 exports.unlikePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post introuvable" });
-
-    if (!post.likes.includes(req.user.id)) {
-      return res.status(400).json({ message: "Déjà pas aimé" });
+    if (!post) {
+      return res.status(404).json({ message: "Post non trouvé" });
     }
 
-    post.likes = post.likes.filter((like) => like.toString() !== req.user.id);
+    // Log pour debug
+    console.log('req.user._id:', req.user._id);
+    console.log('post.likes:', post.likes.map(l => l && l.toString()));
+
+    // Vérifier si l'utilisateur a liké le post
+    const hasLiked = post.likes.some(likeId => likeId && likeId.toString() === req.user._id);
+    if (!hasLiked) {
+      return res.status(400).json({ message: "Vous n'avez pas liké ce post" });
+    }
+
+    post.likes = post.likes.filter(id => id && id.toString() !== req.user._id);
     await post.save();
 
+    await post.populate('author', 'username email');
+    await post.populate('comments.author', 'username');
+
     res.json(post);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la suppression du like" });
+  } catch (error) {
+    console.error("Erreur lors du unlike:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.syncUser = async (req, res) => {
+  const { firebaseUid, email, username, imageUrl } = req.body;
+
+  try {
+    let user = await User.findOne({ firebaseUid });
+
+    if (!user) {
+      user = await User.create({
+        firebaseUid,
+        email,
+        username,
+        imageUrl: imageUrl || "",
+        role: "user",
+      });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Erreur syncUser :", error);
+    res.status(500).json({ message: "Erreur lors de la synchronisation" });
   }
 };

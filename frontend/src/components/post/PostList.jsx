@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import API from "../../api/axios";
-import { MoreVertical, Trash, Pencil, FileText, ArrowBigDown, ArrowBigUp } from "lucide-react";
+import { MoreVertical, Trash, Pencil, FileText, ThumbsUp, MessageCircle } from "lucide-react";
 import PostEditModal from "./PostEditModal";
-import CommentSection  from "./CommentSection";
+import CommentSection from "./CommentSection";
+import { toast } from "react-toastify";
 
 const PostList = ({ posts = [], onDelete }) => {
   const { user } = useAuth();
   const [showMenuId, setShowMenuId] = useState(null);
   const [editPost, setEditPost] = useState(null);
+  const [showComments, setShowComments] = useState({});
 
   const handleDelete = async (postId) => {
     try {
@@ -24,6 +26,35 @@ const PostList = ({ posts = [], onDelete }) => {
   const handleUpdatePost = () => {
     onDelete();
     setEditPost(null);
+  };
+
+  const handleLike = async (postId) => {
+    try {
+      await API.post(`/posts/${postId}/like`);
+      onDelete(); // Rafraîchir la liste des posts
+    } catch (err) {
+      toast.error("Erreur lors du like");
+    }
+  };
+
+  const handleUnlike = async (postId) => {
+    try {
+      await API.post(`/posts/${postId}/unlike`);
+      onDelete(); // Rafraîchir la liste des posts
+    } catch (err) {
+      toast.error("Erreur lors du unlike");
+    }
+  };
+
+  const toggleComments = (postId) => {
+    setShowComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
+
+  const isLiked = (post) => {
+    return post.likes?.some(likeId => likeId?.toString() === user?._id?.toString());
   };
 
   if (!posts.length)
@@ -69,10 +100,10 @@ const PostList = ({ posts = [], onDelete }) => {
           )}
 
           <h3 className="font-bold text-gray-800 mb-1">
-            {post.author.username}
+            {post.author?.username || "Utilisateur"}
           </h3>
           <p className="text-gray-500 text-sm mb-2">
-            {post.author.role === "pilote" && (
+            {post.author?.role === "pilote" && (
               <span className="text-green-500 font-semibold">Pilote</span>
             )}
           </p>
@@ -105,16 +136,39 @@ const PostList = ({ posts = [], onDelete }) => {
                   Voir le fichier
                 </a>
               )}
-              </div>
+            </div>
           )}
-          <p className="text-gray-500 text-sm mt-1">
+
+          <div className="flex items-center gap-4 mt-4 border-t pt-4">
+            <button
+              onClick={() => isLiked(post) ? handleUnlike(post._id) : handleLike(post._id)}
+              className={`flex items-center gap-2 ${
+                isLiked(post) ? "text-blue-600" : "text-gray-500"
+              }`}
+            >
+              <ThumbsUp className="w-5 h-5" />
+              <span>{post.likes?.length || 0}</span>
+            </button>
+            <button
+              onClick={() => toggleComments(post._id)}
+              className="flex items-center gap-2 text-gray-500"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>{post.comments?.length || 0}</span>
+            </button>
+          </div>
+
+          {showComments[post._id] && (
+            <CommentSection post={post} onUpdate={onDelete} />
+          )}
+
+          <p className="text-gray-500 text-sm mt-2">
             {new Date(post.createdAt).toLocaleDateString("fr-FR", {
               year: "numeric",
               month: "long",
               day: "numeric",
             })}
           </p>
-          <CommentSection post={post} onUpdate={onDelete} />
         </div>
       ))}
 
@@ -125,20 +179,6 @@ const PostList = ({ posts = [], onDelete }) => {
           onPostUpdated={handleUpdatePost}
         />
       )}
-
-
-      
-      
-      <div className="flex flex-end mt-4">
-        <button
-          onClick={() => window.scrollTo(0, 0)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          <ArrowBigUp className="w-4 h-4 inline" />
-       
-
-        </button>
-        </div>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 const admin = require("firebase-admin");
 const serviceAccount = require("../config/myicconline-firebase-adminsdk-fbsvc-caeee6bf8e.json"); // à récupérer de Firebase
-
-
+const User = require("../models/User");
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -24,13 +23,24 @@ module.exports = async function (req, res, next) {
   try {
     // ✅ Vérification du token Firebase
     const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log("✅ Token Firebase décodé :", decodedToken);
+   
+    // Recherche de l'utilisateur MongoDB par email
+    const userMongo = await User.findOne({ email: decodedToken.email });
 
-    // 📌 Injection dans req.user pour utilisation ultérieure
-    req.user = decodedToken;
+    req.user = {
+      id: decodedToken.user_id, // Firebase UID
+      email: decodedToken.email,
+      _id: userMongo ? userMongo._id.toString() : null, // MongoDB _id
+      role: userMongo ? userMongo.role : 'user',
+    };
+
+    if (!req.user._id) {
+      return res.status(400).json({ message: "Utilisateur non reconnu (ID MongoDB manquant)" });
+    }
+
     next();
   } catch (error) {
-    console.error("❌ Token invalide :", error.message);
+    console.error("❌ Token invalide ou erreur Mongo :", error.message);
     return res.status(401).json({ message: "Token invalide" });
   }
 };
