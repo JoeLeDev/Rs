@@ -6,8 +6,8 @@ import {
   signOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../Firebase";
+import { auth } from "../Firebase";
+import axios from "axios";
 
 const AuthContext = createContext();
 
@@ -15,19 +15,41 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("user");
-  const [userData, setUserData] = useState(null); // à utiliser si tu veux fetch depuis Firestore plus tard
+  const [userData, setUserData] = useState(null);
 
-  // 🔐 Écoute de l'état d'authentification
+  // Écoute les changements d’état de connexion Firebase
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          const { data } = await axios.get(
+            "http://localhost:5000/api/auth/me",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setUserRole(data.role);
+          setUserData(data);
+        } catch (error) {
+          console.error("Erreur récupération user Mongo :", error);
+        }
+      } else {
+        setUserRole("user");
+        setUserData(null);
+      }
+
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // 🔑 Connexion
+  // Connexion
   const login = async (email, password) => {
     try {
       const res = await signInWithEmailAndPassword(auth, email, password);
@@ -37,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 📝 Inscription + création document Firestore + nom affiché
+  //  Inscription + synchronisation vers MongoDB
   const signUp = async (email, password, firstName, lastName, country) => {
     try {
       const fullName = `${firstName} ${lastName}`;
@@ -45,17 +67,23 @@ export const AuthProvider = ({ children }) => {
 
       await updateProfile(res.user, { displayName: fullName });
 
-      await setDoc(doc(db, "users", res.user.uid), {
-        uid: res.user.uid,
-        email: res.user.email,
-        firstName,
-        lastName,
-        fullName,
-        country,
-        role: "user", // valeur par défaut
-        photoURL: "",
-        createdAt: serverTimestamp(),
-      });
+      const token = await res.user.getIdToken();
+
+      await axios.post(
+        "http://localhost:5000/api/auth/sync",
+        {
+          firebaseUid: res.user.uid,
+          email: res.user.email,
+          username: fullName,
+          imageUrl: res.user.photoURL || "",
+          country,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       return res;
     } catch (error) {
@@ -63,9 +91,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🚪 Déconnexion
+  //  Déconnexion
   const logout = () => {
     signOut(auth);
+    setUser(null);
+    setUserRole("user");
+    setUserData(null);
   };
 
   return (

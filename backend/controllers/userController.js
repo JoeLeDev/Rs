@@ -22,3 +22,29 @@ exports.syncUser = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la synchronisation" });
   }
 };
+
+
+exports.updateUser = async (req, res) => {
+  const userId = req.user.uid; // ou req.user.id si tu stockes ça différemment
+  const { email, username, imageUrl } = req.body;
+
+  try {
+    const updateFields = {};
+
+    if (email) updateFields.email = email;
+    if (username) updateFields.username = username;
+    if (imageUrl) updateFields.imageUrl = imageUrl;
+
+    const updatedUser = await User.findOneAndUpdate(
+      { firebaseUid: userId }, // ← on utilise firebaseUid ici !
+      updateFields,
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json({ user: updatedUser });
+  } catch (err) {
+    console.error("Erreur updateUser :", err);
+    res.status(500).json({ message: "Erreur mise à jour profil" });
+  }
+};
+

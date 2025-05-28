@@ -37,25 +37,36 @@ const GroupList = () => {
 
   const fetchGroups = async () => {
     try {
-      const res = await API.get("/groups");
+      if (!user) return;
+
+      const token = await user.getIdToken();
+
+      const res = await API.get("/groups", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      
       setGroups(res.data);
       setFiltered(res.data);
     } catch (err) {
+      console.error("Erreur fetchGroups :", err);
       setError("Impossible de charger les groupes");
     }
   };
 
   useEffect(() => {
-    fetchGroups();
+    if (user) {
+      fetchGroups();
+    }
 
     let result = [...groups];
 
-    // 📅 Filtre par jour
     if (meetingDay) {
       result = result.filter((group) => group.meetingDay === meetingDay);
     }
 
-    // 👥 Filtre par appartenance
     if (membershipFilter === "joined") {
       result = result.filter((group) =>
         group.members.some((m) =>
@@ -71,7 +82,6 @@ const GroupList = () => {
       );
     }
 
-    // 🔎 Filtre texte
     if (search.trim() !== "") {
       const lower = search.toLowerCase();
       result = result.filter(
@@ -82,13 +92,14 @@ const GroupList = () => {
     }
 
     setFiltered(result);
-  }, [groups, meetingDay, membershipFilter, search]);
+  }, [user, groups, meetingDay, membershipFilter, search]);
 
   const handleCreateGroup = async () => {
     if (!name) return toast.error("Le nom est requis");
 
     try {
-      await API.post("/groups", { name, description });
+      const token = await user.getIdToken();
+      await API.post("/groups", { name, description },  {headers: { Authorization: `Bearer ${token}` }});
       toast.success("Groupe créé !");
       setShowModal(false);
       setName("");
@@ -101,7 +112,8 @@ const GroupList = () => {
 
   const handleUpdateGroup = async (data) => {
     try {
-      await API.patch(`/groups/${groupToEdit._id}`, data);
+      const token = await user.getIdToken();
+      await API.patch(`/groups/${groupToEdit._id}`, data, {headers: { Authorization: `Bearer ${token}` }});
       const refreshed = await API.get(`/groups/${groupToEdit._id}`);
       setGroupToEdit(refreshed.data); // remet à jour la modale
       toast.success("Groupe mis à jour !");
@@ -113,7 +125,8 @@ const GroupList = () => {
 
   const handleDeleteGroup = async () => {
     try {
-      await API.delete(`/groups/${groupToEdit._id}`);
+      const token = await user.getIdToken();
+      await API.delete(`/groups/${groupToEdit._id}`, {headers: { Authorization: `Bearer ${token}` }});
       toast.success("Groupe supprimé !");
       setShowManageModal(false);
       fetchGroups();
@@ -255,6 +268,7 @@ const GroupList = () => {
                   <button
                     onClick={async () => {
                       try {
+                        const token = await user.getIdToken();
                         const res = await API.get(`/groups/${group._id}`); // 👈 fetch avec populate(members)
                         setGroupToEdit(res.data); // ✅ avec des objets membres complets
                         setShowManageModal(true);
